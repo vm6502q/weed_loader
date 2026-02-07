@@ -110,6 +110,7 @@ class WeedModule:
                 complex_num = complex(double_ptr[j], double_ptr[j + 1])
                 data.append(complex_num)
 
+        del double_ptr
         del data_out
 
         return WeedTensor(data, shape_out[:], stride_out[:], dtype_out)
