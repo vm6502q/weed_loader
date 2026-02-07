@@ -99,6 +99,8 @@ class WeedModule:
 
         self._throw_if_error()
 
+        shape_ptr = ctypes.cast(shape_out, ctypes.POINTER(ctypes.c_longlong))
+        stride_ptr = ctypes.cast(stride_out, ctypes.POINTER(ctypes.c_longlong))
         double_ptr = ctypes.cast(data_out, ctypes.POINTER(ctypes.c_double))
 
         if dtype_out == DType.REAL:
@@ -113,4 +115,4 @@ class WeedModule:
         del double_ptr
         del data_out
 
-        return WeedTensor(data, shape_out[:], stride_out[:], dtype_out)
+        return WeedTensor(data, shape_ptr[:n], stride_ptr[:n], dtype_out)
