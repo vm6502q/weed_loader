@@ -99,13 +99,15 @@ class WeedModule:
 
         self._throw_if_error()
 
+        double_ptr = ctypes.cast(data_out, ctypes.POINTER(ctypes.c_double))
+
         if dtype_out == DType.REAL:
-            data = data_out[:]
+            data = double_ptr[:d_size_out]
         else:
             data = []
             for i in range(d_size_out):
                 j = i << 1
-                complex_num = complex(data_out[j], data_out[j + 1])
+                complex_num = complex(double_ptr[j], double_ptr[j + 1])
                 data.append(complex_num)
 
         del data_out
