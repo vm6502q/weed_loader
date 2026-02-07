@@ -18,7 +18,7 @@ class WeedModule:
     """
 
     def _get_error(self):
-        return Weed.weed_lib.get_error(self.sid)
+        return Weed.weed_lib.get_error(self.mid)
 
     def _throw_if_error(self):
         if self._get_error() != 0:
@@ -31,9 +31,9 @@ class WeedModule:
         self._throw_if_error()
 
     def __del__(self):
-        if selfmid is not None:
-            Weed.weed_lib.free_module(self.sid)
-            self.sid = None
+        if self.mid is not None:
+            Weed.weed_lib.free_module(self.mid)
+            self.mid = None
 
     @staticmethod
     def _int_byref(a):
