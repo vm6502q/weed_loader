@@ -1,0 +1,110 @@
+# (C) Daniel Strano and the Qrack contributors 2017-2025. All rights reserved.
+#
+# Use of this source code is governed by an MIT-style license that can be
+# found in the LICENSE file or at https://opensource.org/licenses/MIT.
+
+import ctypes
+
+from .weed_system import Weed
+from .dtype import DType
+from .weed_tensor import WeedTensor
+
+
+class WeedModule:
+    """Holds a Weed module loaded from disk
+
+    Attributes:
+        mid(int): Corresponding module id.
+    """
+
+    def _get_error(self):
+        return Qrack.weed_lib.get_error(self.sid)
+
+    def _throw_if_error(self):
+        if self._get_error() != 0:
+            raise RuntimeError("Weed C++ library raised exception.")
+
+    def __init__(self, file_path):
+        byte_string = file_path.encode('utf-8')
+        c_string_ptr = ctypes.c_char_p(byte_string)
+        self.mid = Weed.weed_lib.load_module(c_string_ptr)
+        self._throw_if_error()
+
+    def __del__(self):
+        if selfmid is not None:
+            Weed.weed_lib.free_module(self.sid)
+            self.sid = None
+
+    @staticmethod
+    def _int_byref(a):
+        return (ctypes.c_int * len(a))(*a)
+
+    @staticmethod
+    def _ulonglong_byref(a):
+        return (ctypes.c_ulonglong * len(a))(*a)
+
+    @staticmethod
+    def _longlong_byref(a):
+        return (ctypes.c_longlong * len(a))(*a)
+
+    @staticmethod
+    def _double_byref(a):
+        return (ctypes.c_double * len(a))(*a)
+
+    @staticmethod
+    def _complex_byref(a):
+        t = [(c.real, c.imag) for c in a]
+        return WeedModule._double_byref([float(item) for sublist in t for item in sublist])
+
+    @staticmethod
+    def _bool_byref(a):
+        return (ctypes.c_bool * len(a))(*a)
+
+    def forward(self, t):
+        """Applies forward inference on tensor.
+
+        Applies the loaded model to the tensor "t" as input.
+
+        Args:
+            t (WeedTensor): The Tensor on which to apply the Module
+
+        Returns:
+            The WeedTensor output from the Module
+
+        Raises:
+            RuntimeError: Weed C++ library raised an exception.
+        """
+        data_in = WeedModule._double_byref(t.data) if t.dtype == DType.REAL else WeedModule._complex_byref(t.data)
+        Weed.weed_lib.forward(
+            self.mid,
+            t.dtype,
+            len(t.shape),
+            WeedModule._ulonglong_byref(t.shape),
+            WeedModule._ulonglong_byref(t.stride),
+            data_in
+        )
+        self._throw_if_error()
+        del data_in
+
+        n = Weed.weed_lib.get_result_index_count(self.mid)
+        shape_out = ctypes.c_ulonglong * n
+        stride_out = ctypes.c_ulonglong * n
+        Weed.weed_lib.get_result_dims(self.mid, shape_out, stride_out)
+        dtype_out = DType(Weed.weed_lib.get_result_type(self.mid))
+        d_size_out = Weed.weed_lib.get_result_size(self.mid)
+        data_out = (ctypes.c_double * d_size_out) if dtype_out == DType.REAL else (ctypes.c_double * (d_size_out << 1)) 
+        Weed.weed_lib.get_result(self.mid, data_out)
+        self._throw_if_error()
+
+        if dtype_out == DType.Real:
+            data = data_out[:]
+        else:
+            data = []
+            for i in range(d_size_out):
+                j = i << 1
+                complex_num = complex(data_out[j], data_out[j + 1])
+                data.append(complex_num)
+
+        del data_out
+
+        return WeedTensor(data, shape_out[:], stride_out[:], dtype_out)
