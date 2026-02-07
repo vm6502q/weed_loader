@@ -70,6 +70,16 @@ class WeedSystem:
             POINTER(c_double)
         ]
 
+        self.weed_lib.forward_int.restype = None
+        self.weed_lib.forward_int.argtypes = [
+            c_ulonglong,
+            c_ulonglong,
+            c_ulonglong,
+            POINTER(c_ulonglong),
+            POINTER(c_ulonglong),
+            POINTER(c_longlong)
+        ]
+
         self.weed_lib.get_result_index_count.restype = c_ulonglong
         self.weed_lib.get_result_index_count.argtypes = [c_ulonglong]
 
