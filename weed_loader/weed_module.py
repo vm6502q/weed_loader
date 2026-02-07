@@ -87,16 +87,16 @@ class WeedModule:
         del data_in
 
         n = Weed.weed_lib.get_result_index_count(self.mid)
-        shape_out = ctypes.c_ulonglong * n
-        stride_out = ctypes.c_ulonglong * n
+        shape_out = (ctypes.c_ulonglong * n)()
+        stride_out = (ctypes.c_ulonglong * n)()
         Weed.weed_lib.get_result_dims(self.mid, shape_out, stride_out)
         dtype_out = DType(Weed.weed_lib.get_result_type(self.mid))
         d_size_out = Weed.weed_lib.get_result_size(self.mid)
-        data_out = (ctypes.c_double * d_size_out) if dtype_out == DType.REAL else (ctypes.c_double * (d_size_out << 1)) 
+        data_out = (ctypes.c_double * d_size_out)() if dtype_out == DType.REAL else (ctypes.c_double * (d_size_out << 1))()
         Weed.weed_lib.get_result(self.mid, data_out)
         self._throw_if_error()
 
-        if dtype_out == DType.Real:
+        if dtype_out == DType.REAL:
             data = data_out[:]
         else:
             data = []
