@@ -5,10 +5,6 @@
 
 import ctypes
 
-from .weed_system import Weed
-from .dtype import DType
-from .weed_tensor import WeedTensor
-
 
 class WeedTensor:
     """Container to hold tensor inputs and outputs
