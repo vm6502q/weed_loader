@@ -16,13 +16,14 @@ class WeedTensor:
     dimension matches "shape" and "stride."
 
     Attributes:
+        offset(int): Offset into data storage
         shape(List[int]): Shape of tensor indices
         stride(List[int]): Stride of tensor storage
         data(List): Real or complex data values
         dtype(DType): Real or complex type of data
     """
 
-    def __init__(self, data, shape, stride, dtype=DType.REAL):
+    def __init__(self, data, shape, stride, dtype=DType.REAL, offset=0):
         if len(shape) != len(stride):
             raise ValueError("WeedTensor shape length must match stride length!")
 
@@ -36,7 +37,7 @@ class WeedTensor:
 
           st *= shape[i]
 
-        sz = 0
+        sz = offset
         for i in range(len(stride)):
             sz += (shape[i] - 1) * stride[i]
 
@@ -46,6 +47,7 @@ class WeedTensor:
         if sz > len(data):
             raise ValueError("WeedTensor shape and stride do not match data length!")
 
+        self.offset = offset
         self.data = data
         self.shape = shape
         self.stride = stride

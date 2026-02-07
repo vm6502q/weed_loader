@@ -93,6 +93,7 @@ class WeedModule:
         dtype_out = DType(Weed.weed_lib.get_result_type(self.mid))
 
         d_size_out = Weed.weed_lib.get_result_size(self.mid)
+        d_offset = Weed.weed_lib.get_result_offset(self.mid)
 
         data_out = (ctypes.c_double * d_size_out)() if dtype_out == DType.REAL else (ctypes.c_double * (d_size_out << 1))()
         Weed.weed_lib.get_result(self.mid, data_out)
@@ -115,4 +116,4 @@ class WeedModule:
         del double_ptr
         del data_out
 
-        return WeedTensor(data, shape_ptr[:n], stride_ptr[:n], dtype_out)
+        return WeedTensor(data, shape_ptr[:n], stride_ptr[:n], dtype_out, d_offset)

@@ -83,6 +83,9 @@ class WeedSystem:
         self.weed_lib.get_result_size.restype = c_ulonglong
         self.weed_lib.get_result_size.argtypes = [c_ulonglong]
 
+        self.weed_lib.get_result_offset.restype = c_ulonglong
+        self.weed_lib.get_result_offset.argtypes = [c_ulonglong]
+
         self.weed_lib.get_result_type.restype = c_ulonglong
         self.weed_lib.get_result_type.argtypes = [c_ulonglong]
 
