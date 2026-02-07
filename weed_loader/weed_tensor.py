@@ -5,6 +5,8 @@
 
 import ctypes
 
+from .dtype import DType
+
 
 class WeedTensor:
     """Container to hold tensor inputs and outputs
@@ -20,7 +22,7 @@ class WeedTensor:
         dtype(DType): Real or complex type of data
     """
 
-    def __init__(self, data, shape, stride, dtype):
+    def __init__(self, data, shape, stride, dtype=DType.REAL):
         if len(shape) != len(stride):
             raise ValueError("WeedTensor shape length must match stride length!")
 
