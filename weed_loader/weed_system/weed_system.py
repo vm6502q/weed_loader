@@ -51,14 +51,6 @@ class WeedSystem:
                     )
                     raise e
 
-        self.fppow = 5
-        if "WEED_FPPOW" in os.environ:
-            self.fppow = int(os.environ.get("WEED_FPPOW"))
-        if self.fppow < 4 or self.fppow > 7:
-            raise ValueError(
-                "WEED_FPPOW environment variable must be an integer >3 and <8. (WEED builds from 4 for fp16/half, up to 7 for fp128/quad."
-            )
-
         self.weed_lib.get_error.restype = c_int
         self.weed_lib.get_error.argtypes = [c_ulonglong]
 

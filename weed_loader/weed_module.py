@@ -74,26 +74,29 @@ class WeedModule:
         Raises:
             RuntimeError: Weed C++ library raised an exception.
         """
-        data_in = WeedModule._double_byref(t.data) if t.dtype == DType.REAL else WeedModule._complex_byref(t.data)
         Weed.weed_lib.forward(
             self.mid,
             t.dtype,
             len(t.shape),
             WeedModule._ulonglong_byref(t.shape),
             WeedModule._ulonglong_byref(t.stride),
-            data_in
+            WeedModule._double_byref(t.data) if t.dtype == DType.REAL else WeedModule._complex_byref(t.data)
         )
         self._throw_if_error()
-        del data_in
 
         n = Weed.weed_lib.get_result_index_count(self.mid)
+
         shape_out = (ctypes.c_ulonglong * n)()
         stride_out = (ctypes.c_ulonglong * n)()
         Weed.weed_lib.get_result_dims(self.mid, shape_out, stride_out)
+
         dtype_out = DType(Weed.weed_lib.get_result_type(self.mid))
+
         d_size_out = Weed.weed_lib.get_result_size(self.mid)
+
         data_out = (ctypes.c_double * d_size_out)() if dtype_out == DType.REAL else (ctypes.c_double * (d_size_out << 1))()
         Weed.weed_lib.get_result(self.mid, data_out)
+
         self._throw_if_error()
 
         if dtype_out == DType.REAL:
