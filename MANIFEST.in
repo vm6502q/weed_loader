@@ -1,3 +1,3 @@
-include pyqrack/weed_system/weed_lib/*
-include pyqrack/weed_system/weed_cl_precompile/*
+include weed_loader/weed_system/weed_lib/*
+include weed_loader/weed_system/weed_cl_precompile/*
 include Makefile
