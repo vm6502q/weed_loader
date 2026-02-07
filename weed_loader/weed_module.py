@@ -18,7 +18,7 @@ class WeedModule:
     """
 
     def _get_error(self):
-        return Qrack.weed_lib.get_error(self.sid)
+        return Weed.weed_lib.get_error(self.sid)
 
     def _throw_if_error(self):
         if self._get_error() != 0:
