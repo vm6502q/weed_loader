@@ -27,27 +27,27 @@ class WeedSystem:
             self.weed_lib = CDLL(shared_lib_path)
         except Exception as e:
             if _platform == "win32":
-                shared_lib_path = "C:/Program Files (x86)/Qrack/bin/weed_shared.dll"
+                shared_lib_path = "C:/Program Files (x86)/Weed/bin/weed_shared.dll"
             elif _platform == "darwin":
-                shared_lib_path = "/usr/local/lib/qrack/libweed_shared.dylib"
+                shared_lib_path = "/usr/local/lib/weed/libweed_shared.dylib"
             else:
-                shared_lib_path = "/usr/local/lib/qrack/libweed_shared.so"
+                shared_lib_path = "/usr/local/lib/weed/libweed_shared.so"
 
             try:
                 self.weed_lib = CDLL(shared_lib_path)
             except Exception as e:
                 if _platform == "win32":
-                    shared_lib_path = "C:/Program Files (x86)/Qrack/bin/weed_shared.dll"
+                    shared_lib_path = "C:/Program Files (x86)/Weed/bin/weed_shared.dll"
                 elif _platform == "darwin":
-                    shared_lib_path = "/usr/lib/qrack/libweed_shared.dylib"
+                    shared_lib_path = "/usr/lib/weed/libweed_shared.dylib"
                 else:
-                    shared_lib_path = "/usr/lib/qrack/libweed_shared.so"
+                    shared_lib_path = "/usr/lib/weed/libweed_shared.so"
 
                 try:
                     self.weed_lib = CDLL(shared_lib_path)
                 except Exception as e:
                     print(
-                        "IMPORTANT: Did you remember to install OpenCL, if your Qrack version was built with OpenCL?"
+                        "IMPORTANT: Did you remember to install OpenCL, if your Weed version was built with OpenCL?"
                     )
                     raise e
 
