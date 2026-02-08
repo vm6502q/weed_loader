@@ -30,7 +30,7 @@ build-deps:
 	rm -rf weed_loader/weed_system/weed_cl_precompile
 ifneq ($(OS),Windows_NT)
 ifeq ($(WEED_PRESENT),)
-	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout e081ffe814ae4545e3f0de17431fe91219dd4d51; cd ..
+	git clone https://github.com/vm6502q/weed.git
 endif
 	mkdir -p weed/build
 ifeq ($(UNAME_S),Linux)
