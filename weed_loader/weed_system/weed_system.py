@@ -66,7 +66,6 @@ class WeedSystem:
             c_ulonglong,
             c_ulonglong,
             POINTER(c_ulonglong),
-            POINTER(c_ulonglong),
             POINTER(c_double)
         ]
 
@@ -75,7 +74,6 @@ class WeedSystem:
             c_ulonglong,
             c_ulonglong,
             c_ulonglong,
-            POINTER(c_ulonglong),
             POINTER(c_ulonglong),
             POINTER(c_longlong)
         ]

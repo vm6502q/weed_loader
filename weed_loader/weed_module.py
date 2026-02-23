@@ -80,7 +80,6 @@ class WeedModule:
                 t.dtype,
                 len(t.shape),
                 WeedModule._ulonglong_byref(t.shape),
-                WeedModule._ulonglong_byref(t.stride),
                 WeedModule._longlong_byref(t.data)
             )
         else:
@@ -89,7 +88,6 @@ class WeedModule:
                 t.dtype,
                 len(t.shape),
                 WeedModule._ulonglong_byref(t.shape),
-                WeedModule._ulonglong_byref(t.stride),
                 WeedModule._double_byref(t.data) if t.dtype == DType.REAL else WeedModule._complex_byref(t.data)
             )
         self._throw_if_error()
