@@ -23,19 +23,25 @@ class WeedTensor:
         dtype(DType): Real or complex type of data
     """
 
-    def __init__(self, data, shape, stride, dtype=DType.REAL, offset=0):
-        if len(shape) != len(stride):
-            raise ValueError("WeedTensor shape length must match stride length!")
+    def __init__(self, data, shape, stride=None, dtype=DType.REAL, offset=0):
+        if stride is None:
+            st = 1
+            stride = []
+            for i in range(len(stride)):
+              stride.append(st)
+              st *= shape[i]
+        else:
+            if len(shape) != len(stride):
+                raise ValueError("WeedTensor shape length must match stride length!")
+            st = 1
+            for i in range(len(stride)):
+              if stride[i] == 0:
+                  continue
 
-        st = 1
-        for i in range(len(stride)):
-          if stride[i] == 0:
-              continue
+              if stride[i] != st:
+                  raise ValueError("WeedTensor shape and stride must be contiguous!")
 
-          if stride[i] != st:
-              raise ValueError("WeedTensor shape and stride must be contiguous!")
-
-          st *= shape[i]
+              st *= shape[i]
 
         sz = offset
         for i in range(len(stride)):
