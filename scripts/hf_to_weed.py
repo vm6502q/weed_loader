@@ -166,8 +166,9 @@ def write_layernorm(f, gamma: np.ndarray, beta: np.ndarray, eps: float = 1e-5, l
     write_module_type(f, ModuleType.LAYERNORM_T)
     write_tcapint(f, features)
     write_real(f, eps)
-    write_parameter(f, gamma, label=f'{label}.gamma')
-    write_parameter(f, beta,  label=f'{label}.beta')
+    # Weed stores gamma/beta as [1, 1, features] (3D) — first two strides are 1
+    write_parameter(f, gamma.reshape(1, 1, features), label=f'{label}.gamma')
+    write_parameter(f, beta.reshape(1, 1, features),  label=f'{label}.beta')
 
 def write_gelu(f):
     write_module_type(f, ModuleType.GELU_T)
