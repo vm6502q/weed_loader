@@ -200,6 +200,15 @@ def write_learned_positional_encoding(f, weight: np.ndarray, label=''):
     weight_3d = weight.reshape(1, max_len, d_model)
     write_parameter(f, weight_3d, label=f'{label}.weight')
 
+def write_reshape(f, shape, label=''):
+    """Write a Reshape module. Use -1 for dynamic/inferred dimensions."""
+    if DEBUG:
+        print(f" RESHAPE @{f.tell():>10d}  shape={shape}  {label}")
+    write_module_type(f, ModuleType.RESHAPE_T)
+    write_tcapint(f, len(shape))
+    for s in shape:
+        write_symint(f, s)  # symint allows -1 for dynamic dims
+
 def write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
                                d_model, num_heads, label='attn'):
     head_dim = d_model // num_heads
@@ -383,13 +392,17 @@ def write_gpt2_model(f, tensors, config):
     n_layer   = config['n_layer']
     d_model   = config['d_model']
 
-    # Count top-level modules: token_emb + pos_emb + N layers + final_ln + lm_head
-    n_modules = 2 + n_layer + 2
+    # token_emb + reshape + pos_emb + N layers + final_ln + lm_head
+    n_modules = 3 + n_layer + 2
     write_module_type(f, ModuleType.SEQUENTIAL_T)
     write_tcapint(f, n_modules)
 
-    # Token embedding
+    # Token embedding: [seq_len] → [seq_len, emb_dim]
     write_embedding(f, tensors['wte.weight'], label='wte')
+
+    # Reshape to 3D [1, seq_len, emb_dim] so LearnedPositionalEncoding
+    # receives (B, T, d_model) as it expects via sh[1] = T
+    write_reshape(f, [1, -1, d_model], label='unsqueeze_batch')
 
     # Learned positional encoding
     write_learned_positional_encoding(f, tensors['wpe.weight'], label='wpe')
