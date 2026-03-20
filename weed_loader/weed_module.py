@@ -61,6 +61,12 @@ class WeedModule:
     def _bool_byref(a):
         return (ctypes.c_bool * len(a))(*a)
 
+    def save(self, file_path):
+        byte_string = file_path.encode('utf-8')
+        c_string_ptr = ctypes.c_char_p(byte_string)
+        self.mid = Weed.weed_lib.save_module(self.mid, c_string_ptr)
+        self._throw_if_error()
+
     def forward(self, t):
         """Applies forward inference on tensor.
 
@@ -126,3 +132,21 @@ class WeedModule:
         del data_out
 
         return WeedTensor(data, shape_ptr[:n], stride_ptr[:n], dtype_out, d_offset)
+
+    # Drafted by (Anthropic) Claude, improved by Dan Strano
+    def train_step(self, input_ids, target_ids, learning_rate):
+        """
+        Single fine-tuning step.
+        input_ids: list[int] — token ids for input sequence
+        target_ids: list[int] — token ids for targets (typically input shifted by 1)
+        """
+
+        Weed.weed_lib.train_step(
+            self.mid,
+            len(input_ids),
+            ctypes.cast(input_ids, ctypes.POINTER(ctypes.c_longlong)),
+            len(target_ids),
+            ctypes.cast(target_ids, ctypes.POINTER(ctypes.c_longlong)),
+            learning_rate
+        )
+        self._throw_if_error()

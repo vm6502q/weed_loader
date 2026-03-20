@@ -57,6 +57,9 @@ class WeedSystem:
         self.weed_lib.load_module.restype = c_ulonglong
         self.weed_lib.load_module.argtypes = [c_char_p]
 
+        self.weed_lib.save_module.restype = c_ulonglong
+        self.weed_lib.save_module.argtypes = [c_ulonglong, c_char_p]
+
         self.weed_lib.free_module.restype = None
         self.weed_lib.free_module.argtypes = [c_ulonglong]
 
@@ -101,4 +104,15 @@ class WeedSystem:
         self.weed_lib.get_result.argtypes = [
             c_ulonglong,
             POINTER(c_double)
+        ]
+
+        self.weed_lib.train_step.restype = None
+        self.weed_lib.train_step.argtypes = [
+            c_ulonglong,
+            c_ulonglong,
+            POINTER(c_ulonglong),
+            POINTER(c_longlong),
+            c_ulonglong,
+            POINTER(c_longlong),
+            c_double
         ]
