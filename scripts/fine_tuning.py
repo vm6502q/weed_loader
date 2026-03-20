@@ -69,3 +69,6 @@ def main():
     print("Saving model...")
     model.save(args.model)
     print("Saved.")
+
+if __name__ == '__main__':
+    main()
