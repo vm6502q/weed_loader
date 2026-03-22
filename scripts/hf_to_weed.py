@@ -213,9 +213,12 @@ def write_reshape(f, shape, label=''):
         write_symint(f, s)  # symint allows -1 for dynamic dims
 
 def write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
-                               d_model, num_heads, label='attn'):
-    head_dim = d_model // num_heads
+                               d_model, num_heads, head_dim=None,
+                               rope_params=None, mask_val=-1e9, label='attn'):
+    if head_dim is None:
+        head_dim = d_model // num_heads
     write_module_type(f, ModuleType.MULTIHEAD_ATTENTION_T)
+    write_real(f, mask_val)          # mask_val — first, matching deserializer
     write_symint(f, d_model)
     write_symint(f, num_heads)
     write_symint(f, head_dim)
@@ -223,6 +226,10 @@ def write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
     write_linear(f, W_k, b_k, label=f'{label}.W_k')
     write_linear(f, W_v, b_v, label=f'{label}.W_v')
     write_linear(f, W_o, b_o, label=f'{label}.W_o')
+    has_rope = rope_params is not None
+    write_bool(f, has_rope)
+    if has_rope:
+        write_rope(f, **rope_params)
 
 def write_transformer_encoder_layer(f, tensors, layer_idx, config):
     d_model   = config['d_model']
@@ -557,6 +564,8 @@ def main():
     parser.add_argument('--arch', default='auto',
                         choices=['auto', 'gpt2', 'bert', 'qwen'],
                         help='Model architecture (default: auto-detect from config.json)')
+    parser.add_argument('--mask_val', type=float, default=-1e9,
+                    help='Causal attention mask value (default: -1e9 for HF models)')
     parser.add_argument('--debug', action='store_true',
                         help='Print file offsets and shapes for every parameter written')
     args = parser.parse_args()
