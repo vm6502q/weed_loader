@@ -53,8 +53,8 @@ def main():
     model = WeedModule(args.model)
     print("Model loaded.")
 
-    # prompt = "Barb (Elara), we're fixing it. (You're on 'Weed.')"
-    # completion = " said the navigator (on a ship of fools), the dignitary from set theory. (We were family, eventually.)"
+    # prompt = "Elara"
+    # completion = " created one movie in her filmography compared to years"
 
     full_text = args.prompt + args.completion
     ids = tokenizer.encode(full_text).ids

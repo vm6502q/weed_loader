@@ -65,6 +65,9 @@ class ModuleType:
     MEAN_CENTER_T               = 27
     FLATTEN_T                   = 28
     LEARNED_POSITIONAL_ENCODING_T = 29
+    RMS_NORM_T  = 30
+    ROPE_T      = 31
+    SWIGLU_T    = 32
 
 # StorageType enum — matches storage_type.hpp exactly.
 class StorageType:
@@ -314,6 +317,9 @@ def write_qwen_transformer_layer(f, tensors, layer_idx, config):
     num_heads    = config['num_heads']
     num_kv_heads = config['num_kv_heads']
     eps          = config.get('layer_norm_eps', 1e-6)
+    rope_base    = config.get('rope_theta', 10000.0)
+    max_seq_len  = config.get('max_position_embeddings', 2048)
+    head_dim     = d_model // num_heads
     pfx          = f'model.layers.{layer_idx}'
 
     W_q = tensors[f'{pfx}.self_attn.q_proj.weight']
@@ -325,64 +331,80 @@ def write_qwen_transformer_layer(f, tensors, layer_idx, config):
     W_o = tensors[f'{pfx}.self_attn.o_proj.weight']
     b_o = tensors.get(f'{pfx}.self_attn.o_proj.bias')
 
-    # SwiGLU: concatenate gate_proj and up_proj into ff1, use down_proj as ff2
-    gate_w = tensors[f'{pfx}.mlp.gate_proj.weight']   # (d_ff, d_model)
-    up_w   = tensors[f'{pfx}.mlp.up_proj.weight']     # (d_ff, d_model)
-    down_w = tensors[f'{pfx}.mlp.down_proj.weight']   # (d_model, d_ff)
+    gate_w = tensors[f'{pfx}.mlp.gate_proj.weight']
+    up_w   = tensors[f'{pfx}.mlp.up_proj.weight']
+    down_w = tensors[f'{pfx}.mlp.down_proj.weight']
 
-    # Stack gate and up into a single (2*d_ff, d_model) matrix for ff1.
-    # Weed's GELU activation is applied after ff1; the SwiGLU split can be
-    # handled at inference time if QrackNeuronLayer or a custom op is added.
-    # For now we store gate||up as ff1 and down as ff2 — flag for Weed-side handling.
-    ff1_w = np.concatenate([gate_w, up_w], axis=0)   # (2*d_ff, d_model)
-    ff1_b = None
-    ff2_w = down_w
-    ff2_b = tensors.get(f'{pfx}.mlp.down_proj.bias')
-
-    # RMSNorm: only gamma (weight), no beta. Write zeros for beta.
     ln1_g = tensors[f'{pfx}.input_layernorm.weight']
-    ln1_b = np.zeros_like(ln1_g)
     ln2_g = tensors[f'{pfx}.post_attention_layernorm.weight']
-    ln2_b = np.zeros_like(ln2_g)
 
-    write_module_type(f, ModuleType.TRANSFORMER_ENCODER_LAYER_T)
+    write_module_type(f, ModuleType.QWEN_DECODER_LAYER_T)
     write_tcapint(f, d_model)
-    write_tcapint(f, d_ff * 2)   # ff1 is doubled for gate||up
     write_tcapint(f, num_heads)
+    write_tcapint(f, num_kv_heads)
     write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
                                d_model, num_heads)
-    write_linear(f, ff1_w, ff1_b)
-    write_linear(f, ff2_w, ff2_b)
-    write_layernorm(f, ln1_g, ln1_b, eps)
-    write_layernorm(f, ln2_g, ln2_b, eps)
-    write_gelu(f)   # placeholder activation; SwiGLU needs Weed-side support
+    write_rope(f, head_dim, max_seq_len, rope_base)
+    write_swiglu(f, gate_w, up_w, down_w, label=f'{pfx}.mlp')
+    write_rmsnorm(f, ln1_g, eps, label=f'{pfx}.input_layernorm')
+    write_rmsnorm(f, ln2_g, eps, label=f'{pfx}.post_attention_layernorm')
 
+def write_rmsnorm(f, gamma: np.ndarray, eps: float = 1e-6, label=''):
+    hidden_size = gamma.shape[0]
+    if DEBUG:
+        print(f" RMSNORM @{f.tell():>10d}  hidden_size={hidden_size}  {label}")
+    write_module_type(f, ModuleType.RMS_NORM_T)
+    write_symint(f, -1)          # axis = -1
+    write_tcapint(f, hidden_size)
+    # weight: shape [hidden_size], stride [1], initialised to gamma
+    write_parameter(f, gamma.reshape(hidden_size), label=f'{label}.weight')
+
+def write_rope(f, head_dim: int, max_seq_len: int = 2048,
+               base: float = 10000.0, label=''):
+    if DEBUG:
+        print(f" ROPE @{f.tell():>10d}  head_dim={head_dim}  "
+              f"max_seq_len={max_seq_len}  base={base}  {label}")
+    write_module_type(f, ModuleType.ROPE_T)
+    write_tcapint(f, head_dim)
+    write_tcapint(f, max_seq_len)
+    write_real(f, base)
+    # cos/sin tables are recomputed on load — nothing else to write
+
+def write_swiglu(f, gate_w: np.ndarray, up_w: np.ndarray,
+                 down_w: np.ndarray, label=''):
+    hidden_size        = gate_w.shape[1]   # (d_ff, d_model) → in = d_model
+    intermediate_size  = gate_w.shape[0]   # out = d_ff
+    if DEBUG:
+        print(f" SWIGLU @{f.tell():>10d}  "
+              f"hidden={hidden_size} intermediate={intermediate_size}  {label}")
+    write_module_type(f, ModuleType.SWIGLU_T)
+    write_tcapint(f, hidden_size)
+    write_tcapint(f, intermediate_size)
+    write_linear(f, gate_w, None, label=f'{label}.gate_proj')
+    write_linear(f, up_w,   None, label=f'{label}.up_proj')
+    write_linear(f, down_w, None, label=f'{label}.down_proj')
 
 def write_qwen_model(f, tensors, config):
-    n_layer = config['n_layer']
-    d_model = config['d_model']
-    eps     = config.get('layer_norm_eps', 1e-6)
+    n_layer     = config['n_layer']
+    d_model     = config['d_model']
+    eps         = config.get('layer_norm_eps', 1e-6)
 
-    # Modules: embed_tokens + N layers + final norm + lm_head
+    # embed_tokens + N decoder layers + final RMSNorm + lm_head
     n_modules = 1 + n_layer + 1 + 1
     write_module_type(f, ModuleType.SEQUENTIAL_T)
     write_tcapint(f, n_modules)
 
-    # Token embedding (no positional embedding — Qwen uses RoPE in attention)
-    write_embedding(f, tensors['model.embed_tokens.weight'])
+    write_embedding(f, tensors['model.embed_tokens.weight'],
+                    label='embed_tokens')
 
-    # Decoder layers
     for i in range(n_layer):
         write_qwen_transformer_layer(f, tensors, i, config)
 
-    # Final RMSNorm
-    ln_g = tensors['model.norm.weight']
-    ln_b = np.zeros_like(ln_g)
-    write_layernorm(f, ln_g, ln_b, eps)
+    write_rmsnorm(f, tensors['model.norm.weight'], eps, label='model.norm')
 
-    # LM head
-    lm_w = tensors.get('lm_head.weight', tensors['model.embed_tokens.weight'])
-    write_linear(f, lm_w, None)
+    lm_w = tensors.get('lm_head.weight',
+                        tensors['model.embed_tokens.weight'])
+    write_linear(f, lm_w, None, label='lm_head')
 
 
 # ---------------------------------------------------------------------------
@@ -464,17 +486,17 @@ def normalise_config(raw, arch):
             'layer_norm_eps':       raw.get('layer_norm_eps', 1e-12),
         }
     elif arch == 'qwen':
-        # Qwen2/Qwen3 config field names
         return {
-            'arch':           'qwen',
-            'n_layer':        raw['num_hidden_layers'],
-            'd_model':        raw['hidden_size'],
-            'd_ff':           raw['intermediate_size'],
-            'num_heads':      raw['num_attention_heads'],
-            # Qwen uses grouped query attention — num_key_value_heads may differ
-            'num_kv_heads':   raw.get('num_key_value_heads',
-                                      raw['num_attention_heads']),
-            'layer_norm_eps': raw.get('rms_norm_eps', 1e-6),
+            'arch':                    'qwen',
+            'n_layer':                 raw['num_hidden_layers'],
+            'd_model':                 raw['hidden_size'],
+            'd_ff':                    raw['intermediate_size'],
+            'num_heads':               raw['num_attention_heads'],
+            'num_kv_heads':            raw.get('num_key_value_heads',
+                                               raw['num_attention_heads']),
+            'layer_norm_eps':          raw.get('rms_norm_eps', 1e-6),
+            'rope_theta':              raw.get('rope_theta', 10000.0),
+            'max_position_embeddings': raw.get('max_position_embeddings', 2048),
         }
     else:
         raise ValueError(f"Unsupported arch: {arch}")
