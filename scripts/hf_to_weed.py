@@ -138,6 +138,7 @@ def write_parameter(f, arr: np.ndarray, offset: int = 0, label: str = ''):
     if DEBUG:
         print(f"  PARAM @{f.tell():>10d}  shape={shape}  strides={strides}  {label}")
 
+    write_symint(f, -1)
     write_tcapint(f, offset)
     write_tcapint(f, ndim)
     for s, st in zip(shape, strides):
