@@ -141,9 +141,11 @@ def generate(model: WeedModule,
                                       temperature=temperature)
 
         tokens.append(next_token)
-
+            
         if next_token == eos_token_id:
             break
+
+    model.reset_kv_cache()  # always reset, even on exception
 
     return tokens[len(input_ids):]  # return only newly generated tokens
 

@@ -116,3 +116,6 @@ class WeedSystem:
             POINTER(c_longlong),
             c_double
         ]
+
+        self.weed_lib.reset_kv_cache.restype = None
+        self.weed_lib.reset_kv_cache.argtypes = [c_ulonglong]

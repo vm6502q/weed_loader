@@ -61,6 +61,9 @@ class WeedModule:
     def _bool_byref(a):
         return (ctypes.c_bool * len(a))(*a)
 
+    def reset_kv_cache(self):
+        return Weed.weed_lib.reset_kv_cache(self.mid)
+
     def save(self, file_path):
         byte_string = file_path.encode('utf-8')
         c_string_ptr = ctypes.c_char_p(byte_string)
