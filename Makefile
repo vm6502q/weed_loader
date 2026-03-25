@@ -37,7 +37,9 @@ ifneq ($(filter $(UNAME_P),x86_64 i386),)
 else
 	cd qrack/build; $(CMAKE_L) -DCPP_STD=20 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; make qrack; cd ../..
 endif
-	cp -r qrack/include/* qrack/build/include
+	mkdir qrack/build/qrack
+	cp -r qrack/include/* qrack/build/qrack
+	cp -r qrack/build/include/* qrack/build/qrack
 endif
 ifeq ($(UNAME_S),Darwin)
 ifneq ($(filter $(UNAME_P),x86_64 i386),)
