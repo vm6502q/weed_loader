@@ -26,15 +26,36 @@ help:
 
 .PHONY: build-deps
 build-deps:
+ifneq ($(OS),Windows_NT)
+ifeq ($(QRACK_PRESENT),)
+	git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout f11a8c6a402b6e230328a5934d07b71d8429a423; cd ..
+endif
+	mkdir -p qrack/build
+ifeq ($(UNAME_S),Linux)
+ifneq ($(filter $(UNAME_P),x86_64 i386),)
+	cd qrack/build; $(CMAKE_L) -DCPP_STD=20 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DQBCAPPOW=8 ..; make qrack; cd ../..
+else
+	cd qrack/build; $(CMAKE_L) -DCPP_STD=20 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; make qrack; cd ../..
+endif
+	cp -r qrack/include/* qrack/build/include
+endif
+ifeq ($(UNAME_S),Darwin)
+ifneq ($(filter $(UNAME_P),x86_64 i386),)
+	cd qrack/build; $(CMAKE_L) -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DQBCAPPOW=8 ..; sudo make install; cd ../..
+else
+	cd qrack/build; $(CMAKE_L) -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; sudo make install; cd ../..
+endif
+endif
+endif
 	rm -rf weed_loader/weed_system/weed_lib
 	rm -rf weed_loader/weed_system/weed_cl_precompile
 ifneq ($(OS),Windows_NT)
 ifeq ($(WEED_PRESENT),)
-	git clone https://github.com/vm6502q/weed.git
+	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 9abca184fdbd16ef0cbd8a88b57cb16901ccbe27; cd ..
 endif
 	mkdir -p weed/build
 ifeq ($(UNAME_S),Linux)
-	cd weed/build; $(CMAKE_L) -DWEED_TCAPPOW=6 ..; make weed_shared weed_cl_precompile
+	cd weed/build; $(CMAKE_L) -DWEED_TCAPPOW=6 -DQRACK_INCLUDE="qrack/build/include" -DQRACK_DIR="qrack/build" ..; make weed_shared weed_cl_precompile
 endif
 ifeq ($(UNAME_S),Darwin)
 	cd weed/build; cmake -DENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 ..; make weed_shared weed_cl_precompile
