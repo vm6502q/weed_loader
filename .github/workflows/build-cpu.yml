@@ -1,0 +1,298 @@
+name: Build Weed Loader Wheels
+
+on:
+  push:
+    branches:
+      - cpu-only  # Trigger on pushes to the main branch (adjust if needed)
+
+  workflow_dispatch: # Allow manual triggering of the workflow
+
+
+jobs:
+  build_noble:
+    runs-on: ubuntu-24.04  # Use a Noble Numbat runner
+    strategy:
+      matrix:
+        platform:
+          - manylinux_2_39_x86_64
+    steps:
+      - name: Checkout Weed Loader
+        uses: actions/checkout@v4
+
+      - name: Prepare Build Environment (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake python3-venv
+
+      - name: Install Python Dependencies
+        run: |
+          mkdir venv
+          python -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install wheel setuptools cmake
+
+      - name: Detect manylinux tag
+        id: abi
+        run: |
+          GLIBC_VER=$(ldd --version | head -n1 | grep -oE '[0-9]+\.[0-9]+$')
+          MAJOR=$(echo $GLIBC_VER | cut -d. -f1)
+          MINOR=$(echo $GLIBC_VER | cut -d. -f2)
+          PLATFORM_TAG="manylinux_${MAJOR}_${MINOR}_x86_64"
+          echo "Detected platform: $PLATFORM_TAG"
+          echo "platform=$PLATFORM_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build Wheel
+        run: |
+          source venv/bin/activate
+          pip install .
+          python setup.py bdist_wheel --plat-name=${{ steps.abi.outputs.platform }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weed_loader-${{ matrix.platform }}
+          path: dist/
+
+  build_jammy:
+    runs-on: ubuntu-22.04  # Use a Jammy Jellyfish runner
+    strategy:
+      matrix:
+        platform:
+          - manylinux_2_35_x86_64
+    steps:
+      - name: Checkout Weed Loader
+        uses: actions/checkout@v4
+
+      - name: Prepare Build Environment (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake python3-venv python3.11-venv python3.11-dev
+
+      - name: Install Python Dependencies
+        run: |
+          mkdir venv
+          python3.11 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install wheel setuptools cmake
+
+      - name: Detect manylinux tag
+        id: abi
+        run: |
+          GLIBC_VER=$(ldd --version | head -n1 | grep -oE '[0-9]+\.[0-9]+$')
+          MAJOR=$(echo $GLIBC_VER | cut -d. -f1)
+          MINOR=$(echo $GLIBC_VER | cut -d. -f2)
+          PLATFORM_TAG="manylinux_${MAJOR}_${MINOR}_x86_64"
+          echo "Detected platform: $PLATFORM_TAG"
+          echo "platform=$PLATFORM_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build Wheel
+        run: |
+          source venv/bin/activate
+          pip install .
+          python setup.py bdist_wheel --plat-name=${{ steps.abi.outputs.platform }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weed_loader-${{ matrix.platform }}
+          path: dist/
+
+  build_mac_15:
+    runs-on: macos-15  # Use a Mac OS runner
+    strategy:
+      matrix:
+        platform:
+          - macosx_15_0_arm64
+    steps:
+      - name: Checkout Weed Loader
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install wheel setuptools
+
+      - name: Install Homebrew (MacOS)
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Prepare Build Environment (MacOS)
+        run: |
+          brew upgrade
+          brew install cmake virtualenv
+
+
+      - name: Build Wheel
+        run: |
+          mkdir venv
+          python -m venv venv
+          source venv/bin/activate
+          pip3 install --upgrade wheel setuptools
+          pip3 install -r requirements.txt
+          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout f11a8c6a402b6e230328a5934d07b71d8429a423
+          mkdir -p build; cd build
+          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
+          make qrack_pinvoke
+          sudo make install
+          cd ../..
+          pip3 install .
+          python setup.py bdist_wheel --plat-name=${{ matrix.platform }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weed_loader-${{ matrix.platform }}
+          path: dist/
+
+  build_mac_14:
+    runs-on: macos-14  # Use a Mac OS runner
+    strategy:
+      matrix:
+        platform:
+          - macosx_14_0_arm64
+    steps:
+      - name: Checkout Weed Loader
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install wheel setuptools
+
+      - name: Install Homebrew (MacOS)
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Prepare Build Environment (MacOS)
+        run: |
+          brew upgrade
+          brew install cmake virtualenv
+
+      - name: Build Wheel
+        run: |
+          mkdir venv
+          python -m venv venv
+          source venv/bin/activate
+          pip3 install --upgrade wheel setuptools
+          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout f11a8c6a402b6e230328a5934d07b71d8429a423
+          mkdir -p build; cd build
+          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
+          make qrack_pinvoke
+          sudo make install
+          cd ../..
+          pip3 install .
+          python setup.py bdist_wheel --plat-name=${{ matrix.platform }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weed_loader-${{ matrix.platform }}
+          path: dist/
+
+  build_mac_intel:
+    runs-on: macos-15-intel  # Use a Mac OS runner
+    strategy:
+      matrix:
+        platform:
+          - macosx_15_0_x86_64
+    steps:
+      - name: Checkout Weed Loader
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install wheel setuptools
+
+      - name: Install Homebrew (MacOS)
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Prepare Build Environment (MacOS)
+        run: |
+          brew install cmake virtualenv
+
+      - name: Build Wheel
+        run: |
+          mkdir venv
+          python -m venv venv
+          source venv/bin/activate
+          pip3 install --upgrade wheel setuptools
+          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout f11a8c6a402b6e230328a5934d07b71d8429a423
+          mkdir -p build; cd build
+          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DENABLE_OPENCL=OFF-DCPP_STD=20 -DENABLE_OPENCL=OFF -DQBCAPPOW=8 ..
+          make qrack_pinvoke
+          sudo make install
+          cd ../..
+          pip3 install .
+          python setup.py bdist_wheel --plat-name=${{ matrix.platform }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weed_loader-${{ matrix.platform }}
+          path: dist/
+
+  build_windows:
+    runs-on: windows-latest  # Use a Linux runner
+    strategy:
+      matrix:
+        platform:
+          - win-amd64
+        dependencies: [vcpkg]
+    steps:
+      - name: Checkout Weed Loader
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install wheel setuptools
+
+      - name: Build Wheel
+        run: |
+          pip3 install --upgrade wheel setuptools
+          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout f11a8c6a402b6e230328a5934d07b71d8429a423
+          mkdir -p build; cd build
+          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DENABLE_OPENCL=OFF-DCPP_STD=20 -DENABLE_OPENCL=OFF -DQBCAPPOW=8 ..
+          make qrack_pinvoke
+          sudo make install
+          cd ../..
+	  git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 9abca184fdbd16ef0cbd8a88b57cb16901ccbe27; cd ..
+	  mkdir -p weed/build
+	  cd weed/build
+	  cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DQRACK_INCLUDE="../../qrack/build/include" -DQRACK_DIR="../../qrack/build" ..
+	  make weed_shared weed_cl_precompile
+	  mkdir weed_loader/weed_system/weed_lib
+	  cp weed/build/libweed_shared.* weed_loader/weed_system/weed_lib/
+	  mkdir weed_loader/weed_system/weed_cl_precompile
+	  cp weed/build/weed_cl_precompile weed_loader/weed_system/weed_cl_precompile/
+	  cd ../..
+          pip install .
+          python setup.py bdist_wheel --plat-name=${{ matrix.platform }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weed_loader-${{ matrix.platform }}
+          path: dist/
+
