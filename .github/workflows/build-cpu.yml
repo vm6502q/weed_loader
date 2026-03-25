@@ -273,17 +273,17 @@ jobs:
           pip3 install --upgrade wheel setuptools
           git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout f11a8c6a402b6e230328a5934d07b71d8429a423
           mkdir -p build; cd build
-          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DQBCAPPOW=8 ..
+          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DQBCAPPOW=8 -DENABLE_OPENCL=OFF ..
           make qrack_pinvoke
           cd ../..
           mkdir -p qrack/build/qrack
           cp -r qrack/include/* qrack/build/qrack -Force
           cp -r qrack/build/include/* qrack/build/qrack -Force
-          git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 9abca184fdbd16ef0cbd8a88b57cb16901ccbe27; cd ..
-          mkdir -p weed/build
-          cd weed/build
-          cmake -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 -DWEED_ENABLE_OPENCL=OFF -DQRACK_INCLUDE="../qrack/build/include" -DQRACK_DIR="../qrack/build" ..
+          git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 9abca184fdbd16ef0cbd8a88b57cb16901ccbe27;
+          mkdir -p build; cd build
+          cmake -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 -DWEED_ENABLE_OPENCL=OFF -DQRACK_INCLUDE="../../qrack/build" -DQRACK_DIR="../../qrack/build" ..
           make weed_shared weed_cl_precompile
+          cd ../..
           mkdir weed_loader/weed_system/weed_lib
           cp weed/build/libweed_shared.* weed_loader/weed_system/weed_lib/
           mkdir weed_loader/weed_system/weed_cl_precompile

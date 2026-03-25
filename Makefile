@@ -48,10 +48,8 @@ else
 	cd qrack/build; $(CMAKE_L) -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; sudo make install; cd ../..
 endif
 endif
-endif
 	rm -rf weed_loader/weed_system/weed_lib
 	rm -rf weed_loader/weed_system/weed_cl_precompile
-ifneq ($(OS),Windows_NT)
 ifeq ($(WEED_PRESENT),)
 	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 9abca184fdbd16ef0cbd8a88b57cb16901ccbe27; cd ..
 endif
@@ -62,9 +60,9 @@ endif
 ifeq ($(UNAME_S),Darwin)
 	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 ..; make weed_shared weed_cl_precompile
 endif
-endif
 	mkdir weed_loader/weed_system/weed_lib; cp weed/build/libweed_shared.* weed_loader/weed_system/weed_lib/; cd ../../..
 	mkdir weed_loader/weed_system/weed_cl_precompile; cp weed/build/weed_cl_precompile weed_loader/weed_system/weed_cl_precompile/; cd ../../..
+endif
 
 .PHONY: install
 install:
