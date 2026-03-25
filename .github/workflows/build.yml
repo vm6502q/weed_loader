@@ -3,7 +3,7 @@ name: Build Weed Loader Wheels
 on:
   push:
     branches:
-      - master  # Trigger on pushes to the main branch (adjust if needed)
+      - main  # Trigger on pushes to the main branch (adjust if needed)
 
   workflow_dispatch: # Allow manual triggering of the workflow
 
