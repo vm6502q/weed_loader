@@ -287,7 +287,7 @@ jobs:
           mkdir weed_loader/weed_system/weed_lib
           cp weed/build/libweed_shared.* weed_loader/weed_system/weed_lib/
           mkdir weed_loader/weed_system/weed_cl_precompile
-          cp weed/build/weed_cl_precompile weed_loader/weed_system/weed_cl_precompile/
+          cp weed/build/weed_cl_precompile.exe weed_loader/weed_system/weed_cl_precompile/
           cd ../..
           pip install .
           python setup.py bdist_wheel --plat-name=${{ matrix.platform }}
