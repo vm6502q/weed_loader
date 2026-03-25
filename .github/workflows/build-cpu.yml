@@ -276,7 +276,7 @@ jobs:
           cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DQBCAPPOW=8 ..
           make qrack_pinvoke
           cd ../..
-          mkdir qrack/build/qrack
+          mkdir -p qrack/build/qrack
           cp -r qrack/include/* qrack/build/qrack
           cp -r qrack/build/include/* qrack/build/qrack
           git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 9abca184fdbd16ef0cbd8a88b57cb16901ccbe27; cd ..
