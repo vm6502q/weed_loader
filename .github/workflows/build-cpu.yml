@@ -300,7 +300,7 @@ jobs:
           cd weed
           mkdir build
           cd build
-          cmake .. -DWEED_ENABLE_OPENCL=OFF -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build"
+          cmake .. -DWEED_ENABLE_OPENCL=OFF -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../../qrack/build" -DQRACK_DIR="../../qrack/build"
           cmake --build . --config Release --target weed_shared weed_cl_precompile
           cd ../..
 

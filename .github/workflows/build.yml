@@ -314,7 +314,7 @@ jobs:
           cd weed
           mkdir build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DXXD_BIN="../../xxd.exe" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build"
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DXXD_BIN="../../xxd.exe" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../../qrack/build" -DQRACK_DIR="../../qrack/build"
           cmake --build . --config Release --target weed_shared weed_cl_precompile
           cd ../..
 
