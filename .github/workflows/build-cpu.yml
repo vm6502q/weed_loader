@@ -294,7 +294,7 @@ jobs:
           mkdir build
           cd build
           cmake .. -DENABLE_OPENCL=OFF -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DBoost_NO_SYSTEM_PATHS=TRUE -DQBCAPPOW=8 -DCPP_STD=14 -DBoost_INCLUDE_DIR="C:/vcpkg/installed/x64-windows/include"
-          cmake --build . --config Release --target qrack_pinvoke qrack_cl_precompile
+          cmake --build . --config Release --target qrack qrack_cl_precompile
           cd ../..
 
       - name: Build Weed Windows x86-64

@@ -4,6 +4,7 @@ PYTHON := python3
 
 UNAME_S := $(shell uname -s)
 UNAME_P := $(shell uname -p)
+QRACK_PRESENT := $(wildcard qrack/.)
 WEED_PRESENT := $(wildcard weed/.)
 
 ifeq ("$(wildcard /usr/local/bin/cmake)", "/usr/local/bin/cmake")
@@ -33,9 +34,9 @@ endif
 	mkdir -p qrack/build
 ifeq ($(UNAME_S),Linux)
 ifneq ($(filter $(UNAME_P),x86_64 i386),)
-	cd qrack/build; $(CMAKE_L) -DCPP_STD=20 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DQBCAPPOW=8 ..; make qrack; cd ../..
+	cd qrack/build; $(CMAKE_L) -DCPP_STD=20 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DQBCAPPOW=8 ..; make qrack qrack_cl_precompile; cd ../..
 else
-	cd qrack/build; $(CMAKE_L) -DCPP_STD=20 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; make qrack; cd ../..
+	cd qrack/build; $(CMAKE_L) -DCPP_STD=20 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; make qrack qrack_cl_precompile; cd ../..
 endif
 	mkdir -p qrack/build/qrack
 	cp -r qrack/include/* qrack/build/qrack
