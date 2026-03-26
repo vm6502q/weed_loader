@@ -314,7 +314,7 @@ jobs:
           cd weed
           mkdir build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DXXD_BIN="../../xxd.exe" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../../qrack/build" -DQRACK_DIR="../../qrack/build"
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DXXD_BIN="../../xxd.exe" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build/Release"
           cmake --build . --config Release --target weed_shared weed_cl_precompile
           cd ../..
 
@@ -330,6 +330,6 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pyqrack-${{ matrix.platform }}
+          name: weed_loader-${{ matrix.platform }}
           path: dist/
 
