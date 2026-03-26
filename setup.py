@@ -25,7 +25,7 @@ class Build(build_py):
 
 
 setup(
-    name='weed_loader',
+    name='weed_loader_cpu',
     version=VERSION,
     packages=['weed_loader', 'weed_loader.weed_system'],
     cmdclass={"build_py": Build},
