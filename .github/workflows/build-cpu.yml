@@ -292,14 +292,16 @@ jobs:
           mkdir build
           cd build
           cmake .. -DWEED_ENABLE_OPENCL=OFF -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DBoost_NO_SYSTEM_PATHS=TRUE -DQBCAPPOW=8 -DCPP_STD=14 -DBoost_INCLUDE_DIR="C:/vcpkg/installed/x64-windows/include"
-          cmake --install . --config Release
+          cmake --build . --config Release --target qrack qrack_cl_precompile
           cd ../..
           cd weed
           mkdir build
           cd build
-          cmake .. -DWEED_ENABLE_OPENCL=OFF -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14
+          cmake .. -DWEED_ENABLE_OPENCL=OFF -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build"
           cmake --build . --config Release --target weed_shared weed_cl_precompile
           cd ../..
+          mkdir weed_loader/weed_system/weed_lib; cp weed/build/libweed_shared.* weed_loader/weed_system/weed_lib/
+          mkdir weed_loader/weed_system/cl_precompile; cp weed/build/weed_cl_precompile weed_loader/weed_system/cl_precompile/; cp qrack/build/qrack_cl_precompile weed_loader/weed_system/cl_precompile/
 
       - name: Build Wheel
         run: |
