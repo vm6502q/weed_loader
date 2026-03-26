@@ -274,7 +274,7 @@ jobs:
           git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout f11a8c6a402b6e230328a5934d07b71d8429a423
           mkdir -p build; cd build
           cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DQBCAPPOW=8 -DENABLE_OPENCL=OFF ..
-          make qrack_pinvoke
+          cmake --build . --target all
           cd ../..
           mkdir -p qrack/build/qrack
           cp -r qrack/include/* qrack/build/qrack -Force
