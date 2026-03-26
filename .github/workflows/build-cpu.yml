@@ -133,7 +133,6 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip3 install --upgrade wheel setuptools
-          pip3 install -r requirements.txt
           git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout f11a8c6a402b6e230328a5934d07b71d8429a423
           mkdir -p build; cd build
           cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
@@ -278,6 +277,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install wheel setuptools
 
+
       - name: Install vcpkg dependencies
         run: |
           vcpkg install opencl boost-dynamic-bitset boost-multiprecision
@@ -291,7 +291,7 @@ jobs:
           cd qrack
           mkdir build
           cd build
-          cmake .. -DWEED_ENABLE_OPENCL=OFF -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DBoost_NO_SYSTEM_PATHS=TRUE -DQBCAPPOW=8 -DCPP_STD=14 -DBoost_INCLUDE_DIR="C:/vcpkg/installed/x64-windows/include"
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DBoost_NO_SYSTEM_PATHS=TRUE -DENABLE_OPENCL=OFF -DQBCAPPOW=8 -DCPP_STD=14 -DBoost_INCLUDE_DIR="C:/vcpkg/installed/x64-windows/include"
           cmake --build . --config Release --target qrack qrack_cl_precompile
           cd ../..
           mkdir -p qrack/build/qrack
@@ -300,7 +300,7 @@ jobs:
           cd weed
           mkdir build
           cd build
-          cmake .. -DWEED_ENABLE_OPENCL=OFF -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build/Release"
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build/Release"
           cmake --build . --config Release --target weed_shared weed_cl_precompile
           cd ../..
 
@@ -316,6 +316,6 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pyqrack-${{ matrix.platform }}
+          name: weed_loader-${{ matrix.platform }}
           path: dist/
 
