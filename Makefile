@@ -34,9 +34,9 @@ endif
 	mkdir -p qrack/build
 ifeq ($(UNAME_S),Linux)
 ifneq ($(filter $(UNAME_P),x86_64 i386),)
-	cd qrack/build; $(CMAKE_L) -DCPP_STD=14 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DQBCAPPOW=8 ..; make qrack qrack_cl_precompile; cd ../..
+	cd qrack/build; $(CMAKE_L) -DENABLE_OPENCL=OFF -DCPP_STD=14 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DQBCAPPOW=8 ..; make qrack qrack_cl_precompile; cd ../..
 else
-	cd qrack/build; $(CMAKE_L) -DCPP_STD=14 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; make qrack qrack_cl_precompile; cd ../..
+	cd qrack/build; $(CMAKE_L) -DENABLE_OPENCL=OFF -DCPP_STD=14 -DENABLE_RDRAND=OFF -DENABLE_DEVRAND=ON -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; make qrack qrack_cl_precompile; cd ../..
 endif
 	mkdir -p qrack/build/qrack
 	cp -r qrack/include/* qrack/build/qrack
@@ -44,9 +44,9 @@ endif
 endif
 ifeq ($(UNAME_S),Darwin)
 ifneq ($(filter $(UNAME_P),x86_64 i386),)
-	cd qrack/build; $(CMAKE_L) -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=14 -DENABLE_OPENCL=OFF -DQBCAPPOW=8 ..; sudo make install; cd ../..
+	cd qrack/build; $(CMAKE_L) -DENABLE_OPENCL=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=14 -DENABLE_OPENCL=OFF -DQBCAPPOW=8 ..; sudo make install; cd ../..
 else
-	cd qrack/build; $(CMAKE_L) -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=14 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; sudo make install; cd ../..
+	cd qrack/build; $(CMAKE_L) -DENABLE_OPENCL=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=14 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..; sudo make install; cd ../..
 endif
 endif
 	rm -rf weed_loader/weed_system/weed_lib
@@ -56,7 +56,7 @@ ifeq ($(WEED_PRESENT),)
 endif
 	mkdir -p weed/build
 ifeq ($(UNAME_S),Linux)
-	cd weed/build; $(CMAKE_L) -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build" ..; make weed_shared weed_cl_precompile; cd ../..
+	cd weed/build; $(CMAKE_L) -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build" ..; make weed_shared weed_cl_precompile; cd ../..
 endif
 ifeq ($(UNAME_S),Darwin)
 	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 ..; make weed_shared weed_cl_precompile; cd ../..
