@@ -51,11 +51,11 @@ endif
 	rm -rf weed_loader/weed_system/weed_lib
 	rm -rf weed_loader/weed_system/weed_cl_precompile
 ifeq ($(WEED_PRESENT),)
-	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 9abca184fdbd16ef0cbd8a88b57cb16901ccbe27; cd ..
+	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 31047813860faa4ac0403b019bdb09ad36c13660; cd ..
 endif
 	mkdir -p weed/build
 ifeq ($(UNAME_S),Linux)
-	cd weed/build; $(CMAKE_L) -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build" ..; make weed_shared weed_cl_precompile
+	cd weed/build; $(CMAKE_L) -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 -DQRACK_INCLUDE="${CMAKE_SOURCE_DIR}/qrack/build" -DQRACK_DIR="${CMAKE_SOURCE_DIR}/qrack/build" ..; make weed_shared weed_cl_precompile
 endif
 ifeq ($(UNAME_S),Darwin)
 	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 ..; make weed_shared weed_cl_precompile
