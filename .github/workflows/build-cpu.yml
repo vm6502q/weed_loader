@@ -267,7 +267,7 @@ jobs:
       - name: Checkout Weed
         uses: actions/checkout@v4
         with:
-          repository: 'vm6502q/qrack'
+          repository: 'vm6502q/weed'
           path: weed
 
       - name: Set up Python
