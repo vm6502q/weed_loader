@@ -55,13 +55,13 @@ ifeq ($(WEED_PRESENT),)
 endif
 	mkdir -p weed/build
 ifeq ($(UNAME_S),Linux)
-	cd weed/build; $(CMAKE_L) -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build" ..; make weed_shared weed_cl_precompile
+	cd weed/build; $(CMAKE_L) -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build" ..; make weed_shared weed_cl_precompile; cd ../..
 endif
 ifeq ($(UNAME_S),Darwin)
-	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 ..; make weed_shared weed_cl_precompile
+	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=20 ..; make weed_shared weed_cl_precompile; cd ../..
 endif
 	mkdir weed_loader/weed_system/weed_lib; cp weed/build/libweed_shared.* weed_loader/weed_system/weed_lib/; cd ../../..
-	mkdir weed_loader/weed_system/weed_cl_precompile; cp weed/build/weed_cl_precompile weed_loader/weed_system/weed_cl_precompile/; cd ../../..
+	mkdir weed_loader/weed_system/cl_precompile; cp weed/build/weed_cl_precompile weed_loader/weed_system/cl_precompile/; cp qrack/build/qrack_cl_precompile weed_loader/weed_system/cl_precompile/
 endif
 
 .PHONY: install
