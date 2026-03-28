@@ -31,43 +31,50 @@ except ImportError:
     print("    pip install safetensors numpy")
     sys.exit(1)
 
+try:
+    import ml_dtypes
+    HAS_ML_DTYPES = True
+except ImportError:
+    HAS_ML_DTYPES = False
+
 # ---------------------------------------------------------------------------
 # ModuleType enum (mirrors module_type.hpp exactly)
 # ---------------------------------------------------------------------------
 class ModuleType:
-    NONE_MODULE_TYPE            = 0
-    SEQUENTIAL_T                = 1
-    LINEAR_T                    = 2
-    RELU_T                      = 3
-    SIGMOID_T                   = 4
-    TANH_T                      = 5
-    DROPOUT_T                   = 6
-    LAYERNORM_T                 = 7
-    EMBEDDING_T                 = 8
-    GRU_T                       = 9
-    LSTM_T                      = 10
-    MIGRATE_CPU_T               = 11
-    MIGRATE_GPU_T               = 12
-    SOFTMAX_T                   = 13
-    LOGSOFTMAX_T                = 14
-    QRACK_NEURON_T              = 15
-    QRACK_NEURON_LAYER_T        = 16
-    MULTIHEAD_ATTENTION_T       = 17
-    TRANSFORMER_ENCODER_LAYER_T = 18
-    GELU_T                      = 19
-    MEAN_T                      = 20
-    MIN_T                       = 21
-    MAX_T                       = 22
-    RESHAPE_T                   = 23
-    VARIANCE_T                  = 24
-    STDDEV_T                    = 25
-    POSITIONAL_ENCODING_T       = 26
-    MEAN_CENTER_T               = 27
-    FLATTEN_T                   = 28
+    NONE_MODULE_TYPE              = 0
+    SEQUENTIAL_T                  = 1
+    LINEAR_T                      = 2
+    RELU_T                        = 3
+    SIGMOID_T                     = 4
+    TANH_T                        = 5
+    DROPOUT_T                     = 6
+    LAYERNORM_T                   = 7
+    EMBEDDING_T                   = 8
+    GRU_T                         = 9
+    LSTM_T                        = 10
+    MIGRATE_CPU_T                 = 11
+    MIGRATE_GPU_T                 = 12
+    SOFTMAX_T                     = 13
+    LOGSOFTMAX_T                  = 14
+    QRACK_NEURON_T                = 15
+    QRACK_NEURON_LAYER_T          = 16
+    MULTIHEAD_ATTENTION_T         = 17
+    TRANSFORMER_ENCODER_LAYER_T   = 18
+    GELU_T                        = 19
+    MEAN_T                        = 20
+    MIN_T                         = 21
+    MAX_T                         = 22
+    RESHAPE_T                     = 23
+    VARIANCE_T                    = 24
+    STDDEV_T                      = 25
+    POSITIONAL_ENCODING_T         = 26
+    MEAN_CENTER_T                 = 27
+    FLATTEN_T                     = 28
     LEARNED_POSITIONAL_ENCODING_T = 29
-    RMS_NORM_T  = 30
-    ROPE_T      = 31
-    SWIGLU_T    = 32
+    RMS_NORM_T                    = 30
+    ROPE_T                        = 31
+    SWIGLU_T                      = 32
+    QWEN_DECODER_LAYER_T          = 33
 
 # StorageType enum — matches storage_type.hpp exactly.
 class StorageType:
@@ -399,6 +406,7 @@ def write_qwen_model(f, tensors, config):
     n_layer     = config['n_layer']
     d_model     = config['d_model']
     eps         = config.get('layer_norm_eps', 1e-6)
+    mask_val   = config['mask_val']
 
     # embed_tokens + N decoder layers + final RMSNorm + lm_head
     n_modules = 1 + n_layer + 1 + 1
@@ -409,7 +417,7 @@ def write_qwen_model(f, tensors, config):
                     label='embed_tokens')
 
     for i in range(n_layer):
-        write_qwen_transformer_layer(f, tensors, i, config)
+        write_qwen_transformer_layer(f, tensors, i, config, mask_val)
 
     write_rmsnorm(f, tensors['model.norm.weight'], eps, label='model.norm')
 
@@ -547,7 +555,14 @@ def load_safetensors(model_dir: Path):
         try:
             with safe_open(str(st_path), framework='numpy') as f:
                 for key in f.keys():
-                    tensors[key] = f.get_tensor(key).astype(np.float32)
+                    t = f.get_tensor(key)
+                    if 'bfloat16' in str(t.dtype):
+                        if not HAS_ML_DTYPES:
+                            print(f"  WARNING: skipping {key}: bfloat16 requires ml_dtypes (pip install ml_dtypes)")
+                            continue
+                        tensors[key] = t.astype(ml_dtypes.bfloat16).astype(np.float32)
+                    else:
+                        tensors[key] = t.astype(np.float32)
         except Exception as e:
             print(f"  WARNING: skipping {st_path.name}: {e}")
             continue
