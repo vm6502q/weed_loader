@@ -23,7 +23,7 @@ var/
 wheels/
 weed/
 weed_loader/weed_system/weed_lib/
-weed_loader/weed_system/weed_cl_precompile/
+weed_loader/weed_system/cl_precompile/
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/

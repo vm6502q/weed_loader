@@ -31,43 +31,50 @@ except ImportError:
     print("    pip install safetensors numpy")
     sys.exit(1)
 
+try:
+    import ml_dtypes
+    HAS_ML_DTYPES = True
+except ImportError:
+    HAS_ML_DTYPES = False
+
 # ---------------------------------------------------------------------------
 # ModuleType enum (mirrors module_type.hpp exactly)
 # ---------------------------------------------------------------------------
 class ModuleType:
-    NONE_MODULE_TYPE            = 0
-    SEQUENTIAL_T                = 1
-    LINEAR_T                    = 2
-    RELU_T                      = 3
-    SIGMOID_T                   = 4
-    TANH_T                      = 5
-    DROPOUT_T                   = 6
-    LAYERNORM_T                 = 7
-    EMBEDDING_T                 = 8
-    GRU_T                       = 9
-    LSTM_T                      = 10
-    MIGRATE_CPU_T               = 11
-    MIGRATE_GPU_T               = 12
-    SOFTMAX_T                   = 13
-    LOGSOFTMAX_T                = 14
-    QRACK_NEURON_T              = 15
-    QRACK_NEURON_LAYER_T        = 16
-    MULTIHEAD_ATTENTION_T       = 17
-    TRANSFORMER_ENCODER_LAYER_T = 18
-    GELU_T                      = 19
-    MEAN_T                      = 20
-    MIN_T                       = 21
-    MAX_T                       = 22
-    RESHAPE_T                   = 23
-    VARIANCE_T                  = 24
-    STDDEV_T                    = 25
-    POSITIONAL_ENCODING_T       = 26
-    MEAN_CENTER_T               = 27
-    FLATTEN_T                   = 28
+    NONE_MODULE_TYPE              = 0
+    SEQUENTIAL_T                  = 1
+    LINEAR_T                      = 2
+    RELU_T                        = 3
+    SIGMOID_T                     = 4
+    TANH_T                        = 5
+    DROPOUT_T                     = 6
+    LAYERNORM_T                   = 7
+    EMBEDDING_T                   = 8
+    GRU_T                         = 9
+    LSTM_T                        = 10
+    MIGRATE_CPU_T                 = 11
+    MIGRATE_GPU_T                 = 12
+    SOFTMAX_T                     = 13
+    LOGSOFTMAX_T                  = 14
+    QRACK_NEURON_T                = 15
+    QRACK_NEURON_LAYER_T          = 16
+    MULTIHEAD_ATTENTION_T         = 17
+    TRANSFORMER_ENCODER_LAYER_T   = 18
+    GELU_T                        = 19
+    MEAN_T                        = 20
+    MIN_T                         = 21
+    MAX_T                         = 22
+    RESHAPE_T                     = 23
+    VARIANCE_T                    = 24
+    STDDEV_T                      = 25
+    POSITIONAL_ENCODING_T         = 26
+    MEAN_CENTER_T                 = 27
+    FLATTEN_T                     = 28
     LEARNED_POSITIONAL_ENCODING_T = 29
-    RMS_NORM_T  = 30
-    ROPE_T      = 31
-    SWIGLU_T    = 32
+    RMS_NORM_T                    = 30
+    ROPE_T                        = 31
+    SWIGLU_T                      = 32
+    QWEN_DECODER_LAYER_T          = 33
 
 # StorageType enum — matches storage_type.hpp exactly.
 class StorageType:
@@ -215,16 +222,17 @@ def write_reshape(f, shape, label=''):
         write_symint(f, s)  # symint allows -1 for dynamic dims
 
 def write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
-                               d_model, num_heads, head_dim=None,
+                               d_model, num_heads, num_kv_heads, head_dim=None,
                                rope_params=None, mask_val=-1e9, label='attn'):
     if head_dim is None:
         head_dim = d_model // num_heads
     write_module_type(f, ModuleType.MULTIHEAD_ATTENTION_T)
-    write_real(f, mask_val)          # mask_val — first, matching deserializer
+    write_real(f, mask_val)
     write_symint(f, d_model)
     write_symint(f, num_heads)
+    write_symint(f, num_kv_heads)
     write_symint(f, head_dim)
-    write_bool(f, True) # use KV cache (overwrite training option)
+    write_bool(f, True)  # use_kv_cache — always True for converted models
     write_linear(f, W_q, b_q, label=f'{label}.W_q')
     write_linear(f, W_k, b_k, label=f'{label}.W_k')
     write_linear(f, W_v, b_v, label=f'{label}.W_v')
@@ -307,7 +315,8 @@ def write_transformer_encoder_layer(f, tensors, layer_idx, config, mask_val):
     write_tcapint(f, d_ff)
     write_tcapint(f, num_heads)
     write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
-                               d_model, num_heads, None, None, mask_val)
+                               d_model, num_heads, num_heads, None, None,
+                               mask_val)
     write_linear(f, ff1_w, ff1_b)
     write_linear(f, ff2_w, ff2_b)
     write_layernorm(f, ln1_g, ln1_b, ln_eps)
@@ -330,7 +339,7 @@ def write_qwen_transformer_layer(f, tensors, layer_idx, config, mask_val):
     rope_base    = config.get('rope_theta', 10000.0)
     max_seq_len  = config.get('max_position_embeddings', 2048)
     mask_val     = config.get('mask_val', -1e9)
-    head_dim     = d_model // num_heads
+    head_dim     = config.get('head_dim', 128)
     pfx          = f'model.layers.{layer_idx}'
 
     W_q = tensors[f'{pfx}.self_attn.q_proj.weight']
@@ -354,8 +363,15 @@ def write_qwen_transformer_layer(f, tensors, layer_idx, config, mask_val):
     write_tcapint(f, num_heads)
     write_tcapint(f, num_kv_heads)
     write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
-                               d_model, num_heads, None, None, mask_val)
-    write_rope(f, head_dim, max_seq_len, rope_base)
+                           d_model, num_heads,
+                           head_dim=head_dim,
+                           num_kv_heads=num_kv_heads,
+                           rope_params={
+                               'head_dim': head_dim,
+                               'max_seq_len': max_seq_len,
+                               'base': rope_base,
+                           },
+                           mask_val=mask_val)
     write_swiglu(f, gate_w, up_w, down_w, label=f'{pfx}.mlp')
     write_rmsnorm(f, ln1_g, eps, label=f'{pfx}.input_layernorm')
     write_rmsnorm(f, ln2_g, eps, label=f'{pfx}.post_attention_layernorm')
@@ -399,17 +415,19 @@ def write_qwen_model(f, tensors, config):
     n_layer     = config['n_layer']
     d_model     = config['d_model']
     eps         = config.get('layer_norm_eps', 1e-6)
+    mask_val   = config['mask_val']
 
-    # embed_tokens + N decoder layers + final RMSNorm + lm_head
-    n_modules = 1 + n_layer + 1 + 1
+    # embed + reshape + layers + norm + lm_head
+    n_modules = 1 + 1 + n_layer + 1 + 1
     write_module_type(f, ModuleType.SEQUENTIAL_T)
     write_tcapint(f, n_modules)
 
     write_embedding(f, tensors['model.embed_tokens.weight'],
                     label='embed_tokens')
+    write_reshape(f, [1, -1, d_model], label='unsqueeze_batch')
 
     for i in range(n_layer):
-        write_qwen_transformer_layer(f, tensors, i, config)
+        write_qwen_transformer_layer(f, tensors, i, config, mask_val)
 
     write_rmsnorm(f, tensors['model.norm.weight'], eps, label='model.norm')
 
@@ -503,13 +521,15 @@ def normalise_config(raw, arch, mask_val):
     elif arch == 'qwen':
         return {
             'arch':                    'qwen',
-            'mask_val':                mask_val,
             'n_layer':                 raw['num_hidden_layers'],
             'd_model':                 raw['hidden_size'],
             'd_ff':                    raw['intermediate_size'],
+            'mask_val':                mask_val,
             'num_heads':               raw['num_attention_heads'],
             'num_kv_heads':            raw.get('num_key_value_heads',
                                                raw['num_attention_heads']),
+            'head_dim':                raw.get('head_dim',
+                                               raw['hidden_size'] // raw['num_attention_heads']),
             'layer_norm_eps':          raw.get('rms_norm_eps', 1e-6),
             'rope_theta':              raw.get('rope_theta', 10000.0),
             'max_position_embeddings': raw.get('max_position_embeddings', 2048),
@@ -547,7 +567,14 @@ def load_safetensors(model_dir: Path):
         try:
             with safe_open(str(st_path), framework='numpy') as f:
                 for key in f.keys():
-                    tensors[key] = f.get_tensor(key).astype(np.float32)
+                    t = f.get_tensor(key)
+                    if 'bfloat16' in str(t.dtype):
+                        if not HAS_ML_DTYPES:
+                            print(f"  WARNING: skipping {key}: bfloat16 requires ml_dtypes (pip install ml_dtypes)")
+                            continue
+                        tensors[key] = t.astype(ml_dtypes.bfloat16).astype(np.float32)
+                    else:
+                        tensors[key] = t.astype(np.float32)
         except Exception as e:
             print(f"  WARNING: skipping {st_path.name}: {e}")
             continue
