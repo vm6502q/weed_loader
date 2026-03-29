@@ -132,7 +132,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip3 install --upgrade wheel setuptools
-          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 37ab8f5573b204eac5985d13586e426fabdb8f11
+          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 9948e459fee2ff6bf93697d35ddaab269769dfa4
           mkdir -p build; cd build
           cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
           make qrack_pinvoke
@@ -187,7 +187,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip3 install --upgrade wheel setuptools
-          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 37ab8f5573b204eac5985d13586e426fabdb8f11
+          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 9948e459fee2ff6bf93697d35ddaab269769dfa4
           mkdir -p build; cd build
           cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
           make qrack_pinvoke
@@ -242,7 +242,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip3 install --upgrade wheel setuptools
-          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 37ab8f5573b204eac5985d13586e426fabdb8f11
+          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 9948e459fee2ff6bf93697d35ddaab269769dfa4
           mkdir -p build; cd build
           cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DENABLE_OPENCL=OFF -DCPP_STD=20 -DQBCAPPOW=8 ..
           make qrack_pinvoke
