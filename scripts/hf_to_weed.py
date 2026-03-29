@@ -19,6 +19,7 @@ Supported architectures: gpt2, bert, generic_transformer
 
 import argparse
 import json
+import os
 import struct
 import sys
 from pathlib import Path
@@ -88,6 +89,8 @@ class StorageType:
     REAL_CPU_SPARSE    = 7
     COMPLEX_CPU_SPARSE = 8
 
+gpu_thresh = (1 << 18) * os.cpu_count()
+
 # ---------------------------------------------------------------------------
 # Low-level binary writers
 # (All integers are little-endian to match x86 native; adjust if needed.)
@@ -120,7 +123,10 @@ def write_storage(f, arr: np.ndarray):
     # Weed is column-major (Fortran order) — flatten accordingly.
     arr = np.asfortranarray(arr.astype(np.float32))
     flat = arr.flatten(order='F')
-    w_uint32(f, StorageType.REAL_CPU_DENSE)  # stype
+    if arr.size > gpu_thresh:
+        w_uint32(f, StorageType.REAL_CPU_DENSE)  # stype
+    else:
+        w_uint32(f, StorageType.REAL_GPU_DENSE)  # stype
     write_symint(f, -1)                      # device ID (GPU)
     write_tcapint(f, flat.size)              # size (element count)
     f.write(flat.tobytes())                  # raw float32 elements, column-major
