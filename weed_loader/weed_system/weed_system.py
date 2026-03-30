@@ -119,3 +119,6 @@ class WeedSystem:
 
         self.weed_lib.reset_kv_cache.restype = None
         self.weed_lib.reset_kv_cache.argtypes = [c_ulonglong]
+
+        self.weed_lib.set_max_kv_seq_len.restype = None
+        self.weed_lib.set_max_kv_seq_len.argtypes = [c_ulonglong, c_ulonglong]

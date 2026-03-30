@@ -99,6 +99,8 @@ def generate(model: WeedModule,
     """
     tokens = list(input_ids)
 
+    model.set_max_kv_seq_len(max_new_tokens)
+
     for _ in range(max_new_tokens):
         # Build INT tensor: shape [seq_len]
         t = WeedTensor(
