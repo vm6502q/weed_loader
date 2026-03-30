@@ -252,7 +252,7 @@ jobs:
           cd weed
           mkdir build
           cd build
-          cmake -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DBLAS_INCLUDE_DIRS="C:/vcpkg/installed/x64-windows/include" -DBLAS_LIBRARIES="C:/vcpkg/installed/x64-windows/lib/openblas.lib" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DWEED_ENABLE_OPENCL=OFF -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build/Release" ..
+          cmake -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DWEED_ENABLE_OPENCL=OFF -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build/Release" ..
           cmake --build . --config Release --target weed_shared weed_cl_precompile
           cd ../..
 
