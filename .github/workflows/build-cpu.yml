@@ -135,12 +135,7 @@ jobs:
           pip3 install --upgrade wheel setuptools
           git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 9948e459fee2ff6bf93697d35ddaab269769dfa4
           mkdir -p build; cd build
-          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-                -DENABLE_OPENCL=OFF \
-                -DCPP_STD=20 \
-                -DQBCAPPOW=8 \
-                -DBLAS_LIBRARIES="-framework Accelerate" \
-                ..
+          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
           make qrack_pinvoke
           sudo make install
           cd ../..
@@ -188,12 +183,7 @@ jobs:
           pip3 install --upgrade wheel setuptools
           git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 9948e459fee2ff6bf93697d35ddaab269769dfa4
           mkdir -p build; cd build
-          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-                -DENABLE_OPENCL=OFF \
-                -DCPP_STD=20 \
-                -DQBCAPPOW=8 \
-                -DBLAS_LIBRARIES="-framework Accelerate" \
-                ..
+          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
           make qrack_pinvoke
           sudo make install
           cd ../..
@@ -241,13 +231,7 @@ jobs:
           pip3 install --upgrade wheel setuptools
           git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout 9948e459fee2ff6bf93697d35ddaab269769dfa4
           mkdir -p build; cd build
-          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-                -DENABLE_OPENCL=OFF \
-                -DCPP_STD=20 \
-                -DQBCAPPOW=8 \
-                -DBLAS_INCLUDE_DIRS="$(brew --prefix openblas)/include" \
-                -DBLAS_LIBRARIES="$(brew --prefix openblas)/lib/libopenblas.dylib" \
-                ..
+          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DENABLE_OPENCL=OFF -DCPP_STD=20 -DQBCAPPOW=8 -DBLAS_INCLUDE_DIRS="$(brew --prefix openblas)/include" -DBLAS_LIBRARIES="$(brew --prefix openblas)/lib/libopenblas.dylib" ..
           make qrack_pinvoke
           sudo make install
           cd ../..
@@ -316,14 +300,7 @@ jobs:
           cd weed
           mkdir build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" \
-                   -DBLAS_INCLUDE_DIRS="C:/vcpkg/installed/x64-windows/include" \
-                   -DBLAS_LIBRARIES="C:/vcpkg/installed/x64-windows/lib/openblas.lib" \
-                   -DWEED_ENABLE_OPENCL=OFF \
-                   -DWEED_TCAPPOW=6 \
-                   -DWEED_CPP_STD=14 \
-                   -DQRACK_INCLUDE="../qrack/build" \
-                   -DQRACK_DIR="../qrack/build/Release"
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DBLAS_INCLUDE_DIRS="C:/vcpkg/installed/x64-windows/include" -DBLAS_LIBRARIES="C:/vcpkg/installed/x64-windows/lib/openblas.lib" -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build/Release"
           cmake --build . --config Release --target weed_shared weed_cl_precompile
           cd ../..
 

@@ -59,7 +59,11 @@ ifeq ($(UNAME_S),Linux)
 	cd weed/build; $(CMAKE_L) -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DQRACK_INCLUDE="../qrack/build" -DQRACK_DIR="../qrack/build" ..; make weed_shared weed_cl_precompile; cd ../..
 endif
 ifeq ($(UNAME_S),Darwin)
-	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 ..; make weed_shared weed_cl_precompile; cd ../..
+ifneq ($(filter $(UNAME_P),x86_64 i386),)
+	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DBLAS_INCLUDE_DIRS="$(brew --prefix openblas)/include" -DBLAS_LIBRARIES="$(brew --prefix openblas)/lib/libopenblas.dylib" ..; make weed_shared weed_cl_precompile; cd ../..
+else
+	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DBLAS_LIBRARIES="-framework Accelerate" ..; make weed_shared weed_cl_precompile; cd ../..
+endif
 endif
 	mkdir weed_loader/weed_system/weed_lib; cp weed/build/libweed_shared.* weed_loader/weed_system/weed_lib/
 	mkdir weed_loader/weed_system/cl_precompile; cp weed/build/weed_cl_precompile weed_loader/weed_system/cl_precompile/; cp qrack/build/qrack_cl_precompile weed_loader/weed_system/cl_precompile/
