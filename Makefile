@@ -60,7 +60,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 ifeq ($(UNAME_S),Darwin)
 ifneq ($(filter $(UNAME_P),x86_64 i386),)
-	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DCMAKE_PREFIX_PATH="$(brew --prefix openblas)" ..; make weed_shared weed_cl_precompile; cd ../..
+	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DOpenBLAS_INCLUDE_DIRS="$(brew --prefix openblas)/include" ..; make weed_shared weed_cl_precompile; cd ../..
 else
 	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DBLAS_LIBRARIES="-framework Accelerate" ..; make weed_shared weed_cl_precompile; cd ../..
 endif
