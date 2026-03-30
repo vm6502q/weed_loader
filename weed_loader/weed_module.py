@@ -64,6 +64,9 @@ class WeedModule:
     def reset_kv_cache(self):
         return Weed.weed_lib.reset_kv_cache(self.mid)
 
+    def set_max_kv_seq_len(self, m):
+        return Weed.weed_lib.set_max_kv_seq_len(self.mid, m)
+
     def save(self, file_path):
         byte_string = file_path.encode('utf-8')
         c_string_ptr = ctypes.c_char_p(byte_string)
