@@ -176,7 +176,7 @@ def main():
                              'or HF repo id (e.g. gpt2)')
     parser.add_argument('--prompt', default='Hello',
                         help='Input prompt (default: "Hello")')
-    parser.add_argument('--max_new_tokens', type=int, default=100)
+    parser.add_argument('--max_new_tokens', type=int, default=64)
     parser.add_argument('--temperature', type=float, default=0.7)
     parser.add_argument('--top_p', type=float, default=0.9)
     parser.add_argument('--greedy', action='store_true',
