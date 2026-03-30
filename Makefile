@@ -52,7 +52,7 @@ endif
 	rm -rf weed_loader/weed_system/weed_lib
 	rm -rf weed_loader/weed_system/weed_cl_precompile
 ifeq ($(WEED_PRESENT),)
-	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 9839aaa94d2681a6e0ae2e3101d2b5702d8ed63a; cd ..
+	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 694ce1120719fc591d44108882d3d1587e1a78ab; cd ..
 endif
 	mkdir -p weed/build
 ifeq ($(UNAME_S),Linux)
