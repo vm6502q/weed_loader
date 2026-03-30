@@ -52,7 +52,7 @@ endif
 	rm -rf weed_loader/weed_system/weed_lib
 	rm -rf weed_loader/weed_system/weed_cl_precompile
 ifeq ($(WEED_PRESENT),)
-	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 3b9397073bb8cc7185d40a738d69ef4e332738e1; cd ..
+	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 00f4da994ea5d2b12e999f73488eefe6d53935c6; cd ..
 endif
 	mkdir -p weed/build
 ifeq ($(UNAME_S),Linux)
@@ -60,7 +60,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 ifeq ($(UNAME_S),Darwin)
 ifneq ($(filter $(UNAME_P),x86_64 i386),)
-	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 ..; make weed_shared weed_cl_precompile; cd ../..
+	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DCMAKE_PREFIX_PATH="$(brew --prefix openblas)" ..; make weed_shared weed_cl_precompile; cd ../..
 else
 	cd weed/build; cmake -DWEED_ENABLE_OPENCL=OFF -DWEED_TCAPPOW=6 -DWEED_CPP_STD=14 -DBLAS_LIBRARIES="-framework Accelerate" ..; make weed_shared weed_cl_precompile; cd ../..
 endif
