@@ -22,7 +22,7 @@ jobs:
       - name: Prepare Build Environment (Linux)
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake python3-venv
+          sudo apt-get install -y build-essential cmake python3-venv libopenblas-dev
 
       - name: Install Python Dependencies
         run: |
@@ -67,7 +67,7 @@ jobs:
       - name: Prepare Build Environment (Linux)
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake python3-venv python3.11-venv python3.11-dev
+          sudo apt-get install -y build-essential cmake python3-venv python3.11-venv python3.11-dev libopenblas-dev
 
       - name: Install Python Dependencies
         run: |
@@ -124,7 +124,7 @@ jobs:
 
       - name: Prepare Build Environment (MacOS)
         run: |
-          brew install cmake virtualenv
+          brew install cmake virtualenv openblas
 
 
       - name: Build Wheel
@@ -173,7 +173,7 @@ jobs:
 
       - name: Prepare Build Environment (MacOS)
         run: |
-          brew install cmake virtualenv
+          brew install cmake virtualenv openblas
 
       - name: Build Wheel
         run: |
@@ -221,7 +221,7 @@ jobs:
 
       - name: Prepare Build Environment (MacOS)
         run: |
-          brew install cmake virtualenv
+          brew install cmake virtualenv openblas
 
       - name: Build Wheel
         run: |
@@ -280,7 +280,7 @@ jobs:
 
       - name: Install vcpkg dependencies
         run: |
-          vcpkg install opencl boost-dynamic-bitset boost-multiprecision
+          vcpkg install opencl boost-dynamic-bitset boost-multiprecision openblas
 
       - name: Build Qrack and Weed Windows x86-64
         env:
