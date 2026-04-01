@@ -100,17 +100,46 @@ def generate(model: WeedModule,
     tokens = list(input_ids)
 
     model.set_max_kv_seq_len(max_new_tokens)
+    
+    # First pass: full prompt
+    t = WeedTensor(data=input_ids, shape=[len(input_ids)], stride=[1],
+                   dtype=DType.INT, offset=0)
+    result = model.forward(t)
+    
+    # result.data is flat; result.shape tells us the layout
+    # Expected: (seq_len, vocab_size) flattened, or just (vocab_size,)
+    shape = list(result.shape)
+    data  = list(result.data)
 
-    for _ in range(max_new_tokens):
-        # Build INT tensor: shape [seq_len]
-        t = WeedTensor(
-            data=tokens,
-            shape=[len(tokens)],
-            stride=[1],
-            dtype=DType.INT,
-            offset=0
-        )
+    if len(shape) == 3:
+        # [1, seq_len, vocab_size] column-major
+        _, seq_len, vocab_size = shape
+        # In column-major the last seq position is at index (seq_len-1) across
+        # the second dimension — stride[1] = shape[0] = 1, stride[2] = seq_len
+        # So logit[0, t, v] = data[0 + t*1 + v*seq_len]
+        last_logits = [data[(seq_len - 1) * 1 + v * seq_len] 
+                       for v in range(vocab_size)]
+    elif len(shape) == 2:
+        # [seq_len, vocab_size] — take last position col-major
+        seq_len, vocab_size = shape
+        last_logits = [data[(seq_len - 1) + v * seq_len]
+                       for v in range(vocab_size)]
+    elif len(shape) == 1:
+        last_logits = data
+    else:
+        raise RuntimeError(f"Unexpected output shape: {shape}")
 
+    if greedy_decode or temperature == 0.0:
+        next_token = greedy(last_logits)
+    else:
+        next_token = top_p_sample(last_logits, top_p=top_p,
+                                  temperature=temperature)
+    
+    tokens.append(next_token)
+
+    for _ in range(max_new_tokens - 1):
+        t = WeedTensor(data=[tokens[-1]], shape=[1], stride=[1],
+                       dtype=DType.INT, offset=0)
         result = model.forward(t)
 
         # result.data is flat; result.shape tells us the layout

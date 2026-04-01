@@ -239,6 +239,7 @@ def write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
     write_symint(f, num_kv_heads)
     write_symint(f, head_dim)
     write_bool(f, True)  # use_kv_cache — always True for converted models
+    write_symint(f, 4) # TurboQuant-based key size
     write_linear(f, W_q, b_q, label=f'{label}.W_q')
     write_linear(f, W_k, b_k, label=f'{label}.W_k')
     write_linear(f, W_v, b_v, label=f'{label}.W_v')
