@@ -7,11 +7,11 @@ Minimalist AI/ML inference and backprogation in the style of [Qrack](https://git
 This repository is for the **Python loader** for (C++) Weed models. Once you have trained models in C++, you can load them for use by Python with this project. See the [Weed repository](https://github.com/vm6502q/weed) for more information.
 
 ## Development Status
-**Weed** is a rapidly-developing **work-in-progress**. Its ABI may change drastically and without notice.
+**Weed** is stable by this v1.0.0, thanks largely to a debugging overhaul by (Anthropic) Claude (Fable 5.2).
 
 The project provides a set of essential CPU and GPU **kernels**, used by `Tensor` instances that perform _autograd._ We also provide _stochastic gradient descent (SGD)_ and _Adam_ optimizer implementations. (Build and check the API reference to get started.)
 
-GPT-2, BERT, and Qwen loading is experimental and mostly provided as proof-of-concept, also of the fine-tuning pipeline. Implementation was from published literature design, rather than direct analysis of any open source, to implement these model architectures. Their outputs, in **Weed**, are not yet coherent English, as a result.
+GPT-2 and Qwen loading is experimental and mostly provided as proof-of-concept, also of the fine-tuning pipeline. Implementation was from published literature design, rather than direct analysis of any open source, to implement these model architectures. Their outputs, in **Weed**, are not yet coherent English, as a result.
 
 ## Why try Weed?
 
