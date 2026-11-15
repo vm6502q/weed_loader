@@ -29,7 +29,7 @@ help:
 build-deps:
 ifneq ($(OS),Windows_NT)
 ifeq ($(QRACK_PRESENT),)
-	git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout a6a44f9ffdea84383f34cbd7883aa7f18fe8a125; cd ..
+	git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout ee4097bfe05a5fa3c17d22d88132f7b5ef8079f9; cd ..
 endif
 	mkdir -p qrack/build
 ifeq ($(UNAME_S),Linux)
@@ -50,7 +50,7 @@ else
 endif
 endif
 	rm -rf weed_loader/weed_system/weed_lib
-	rm -rf weed_loader/weed_system/weed_cl_precompile
+	rm -rf weed_loader/weed_system/cl_precompile
 ifeq ($(WEED_PRESENT),)
 	git clone https://github.com/vm6502q/weed.git; cd weed; git checkout 04b69bf4b47c87c275965001bbe7dcb7a16b92fa; cd ..
 endif

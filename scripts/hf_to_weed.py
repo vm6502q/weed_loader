@@ -14,7 +14,7 @@ Usage:
     python3 hf_to_weed.py --model_dir <path_to_hf_model> --output <output.weed> --arch gpt2
     python3 hf_to_weed.py --list_keys --model_dir <path_to_hf_model>
 
-Supported architectures: gpt2, bert, generic_transformer
+Supported architectures: gpt2, qwen
 """
 
 import argparse
@@ -227,11 +227,62 @@ def write_reshape(f, shape, label=''):
     for s in shape:
         write_symint(f, s)  # symint allows -1 for dynamic dims
 
+# KV cache quantization bits (TurboQuant-based), set from the CLI.
+# 0 stores keys and values exactly; anything else is lossy.
+KV_QUANT_BITS = 0
+
+def head_permutations(num_heads, num_kv_heads, head_dim):
+    """
+    Map the HF attention-head layout onto Weed's.
+
+    HF (row-major) splits the projection output into heads as
+        feature = head * head_dim + j
+    Weed is column-major, so MultiHeadAttention's reshape of (B, T, features)
+    to (B, T, heads, head_dim) splits it as
+        feature = head + heads * j
+    Both are self-consistent, but pretrained weights have to be re-ordered from
+    one to the other, or every head mixes features from all the HF heads.
+
+    For grouped-query attention, HF pairs query head h with key/value head
+    (h // groups), while Weed pairs query head h' with key/value head
+    (h' % num_kv_heads), so the query heads are re-ordered to match, as well.
+
+    Returns (q_perm, kv_perm): weed_feature -> hf_feature index arrays, for the
+    Q (and attention output) features and for the K/V features.
+    """
+    if num_heads % num_kv_heads:
+        raise ValueError("num_heads must be divisible by num_kv_heads")
+    groups = num_heads // num_kv_heads
+    q_perm = np.empty(num_heads * head_dim, dtype=np.int64)
+    for d in range(num_heads * head_dim):
+        wh, j = d % num_heads, d // num_heads
+        hf_head = (wh % num_kv_heads) * groups + (wh // num_kv_heads)
+        q_perm[d] = hf_head * head_dim + j
+    kv_perm = np.empty(num_kv_heads * head_dim, dtype=np.int64)
+    for d in range(num_kv_heads * head_dim):
+        kv_perm[d] = (d % num_kv_heads) * head_dim + (d // num_kv_heads)
+    return q_perm, kv_perm
+
 def write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
                                d_model, num_heads, num_kv_heads, head_dim=None,
                                rope_params=None, mask_val=-1e9, label='attn'):
+    """W_* are in HF Linear convention: (out_features, in_features)."""
     if head_dim is None:
         head_dim = d_model // num_heads
+
+    # Re-order head features from the HF layout to the Weed layout.
+    q_perm, kv_perm = head_permutations(num_heads, num_kv_heads, head_dim)
+    W_q = W_q[q_perm, :]
+    W_k = W_k[kv_perm, :]
+    W_v = W_v[kv_perm, :]
+    W_o = W_o[:, q_perm]
+    if b_q is not None:
+        b_q = b_q[q_perm]
+    if b_k is not None:
+        b_k = b_k[kv_perm]
+    if b_v is not None:
+        b_v = b_v[kv_perm]
+
     write_module_type(f, ModuleType.MULTIHEAD_ATTENTION_T)
     write_real(f, mask_val)
     write_symint(f, d_model)
@@ -239,7 +290,7 @@ def write_multihead_attention(f, W_q, b_q, W_k, b_k, W_v, b_v, W_o, b_o,
     write_symint(f, num_kv_heads)
     write_symint(f, head_dim)
     write_bool(f, True)  # use_kv_cache — always True for converted models
-    write_symint(f, 4) # TurboQuant-based key size
+    write_symint(f, KV_QUANT_BITS)  # TurboQuant-based KV cache quantization
     write_linear(f, W_q, b_q, label=f'{label}.W_q')
     write_linear(f, W_k, b_k, label=f'{label}.W_k')
     write_linear(f, W_v, b_v, label=f'{label}.W_v')
@@ -446,7 +497,23 @@ def write_qwen_model(f, tensors, config):
 # ---------------------------------------------------------------------------
 # Top-level sequential model writers per architecture
 # ---------------------------------------------------------------------------
+def strip_key_prefix(tensors, probe, prefixes):
+    """
+    Checkpoints saved from a model with a head (like GPT2LMHeadModel) prefix
+    every base-model key (with "transformer."), while others (like the original
+    "gpt2" repository) do not. Return the tensors with base-model keys bare.
+    """
+    if probe in tensors:
+        return tensors
+    for pfx in prefixes:
+        if (pfx + probe) in tensors:
+            return {(k[len(pfx):] if k.startswith(pfx) else k): v
+                    for k, v in tensors.items()}
+    raise KeyError(f"Can't find '{probe}' in the checkpoint (use --list_keys "
+                   "to inspect the tensor names)")
+
 def write_gpt2_model(f, tensors, config):
+    tensors   = strip_key_prefix(tensors, 'wte.weight', ['transformer.'])
     n_layer   = config['n_layer']
     d_model   = config['d_model']
     mask_val   = config['mask_val']
@@ -480,26 +547,16 @@ def write_gpt2_model(f, tensors, config):
     write_linear(f, lm_w, None, label='lm_head')
 
 def write_bert_model(f, tensors, config):
-    n_layer = config['num_hidden_layers']
-    d_model = config['hidden_size']
-    mask_val   = config['mask_val']
-
-    n_modules = 3 + n_layer + 1  # word_emb + pos_emb + tok_type_emb + layers + pooler
-    write_module_type(f, ModuleType.SEQUENTIAL_T)
-    write_tcapint(f, n_modules)
-
-    write_embedding(f, tensors['embeddings.word_embeddings.weight'])
-    write_learned_positional_encoding(
-        f, tensors['embeddings.position_embeddings.weight'])
-    write_embedding(f, tensors['embeddings.token_type_embeddings.weight'])
-
-    cfg = dict(config, arch='bert')
-    for i in range(n_layer):
-        write_transformer_encoder_layer(f, tensors, i, cfg)
-
-    # Pooler
-    write_linear(f, tensors['pooler.dense.weight'],
-                 tensors.get('pooler.dense.bias'))
+    # Weed can't represent BERT yet. BERT needs post-LayerNorm encoder blocks
+    # (TransformerEncoderLayer is pre-LayerNorm), bidirectional attention
+    # (MultiHeadAttention always applies a causal mask), token-type embeddings
+    # summed with the word embeddings, and a LayerNorm over the embeddings.
+    # Writing a file anyway would only produce a model with the wrong outputs.
+    raise NotImplementedError(
+        "BERT conversion is not supported: Weed's TransformerEncoderLayer is "
+        "a causal, pre-LayerNorm block, and BERT is bidirectional and "
+        "post-LayerNorm (with token-type embeddings and an embedding "
+        "LayerNorm).")
 
 # ---------------------------------------------------------------------------
 # Config normalisation — map HF config.json fields to unified keys
@@ -514,6 +571,7 @@ def normalise_config(raw, arch, mask_val):
             'd_ff':                 raw.get('n_inner') or 4 * raw['n_embd'],
             'num_heads':            raw['n_head'],
             'layer_norm_epsilon':   raw.get('layer_norm_epsilon', 1e-5),
+            'activation_function':  raw.get('activation_function', 'gelu_new'),
         }
     elif arch == 'bert':
         return {
@@ -538,7 +596,10 @@ def normalise_config(raw, arch, mask_val):
             'head_dim':                raw.get('head_dim',
                                                raw['hidden_size'] // raw['num_attention_heads']),
             'layer_norm_eps':          raw.get('rms_norm_eps', 1e-6),
-            'rope_theta':              raw.get('rope_theta', 10000.0),
+            # (Newer transformers versions nest this under "rope_parameters".)
+            'rope_theta':              raw.get('rope_theta',
+                                               (raw.get('rope_parameters') or {})
+                                               .get('rope_theta', 10000.0)),
             'max_position_embeddings': raw.get('max_position_embeddings', 2048),
         }
     else:
@@ -609,13 +670,21 @@ def main():
                         help='Model architecture (default: auto-detect from config.json)')
     parser.add_argument('--mask_val', type=float, default=-1e9,
                     help='Causal attention mask value (default: -1e9 for HF models)')
+    parser.add_argument('--kv_quant_bits', type=int, default=0,
+                        help='KV cache quantization bits (default: 0, which '
+                             'stores keys and values exactly; e.g. 4 saves '
+                             'memory, but it is lossy, and outputs will no '
+                             'longer match the reference implementation)')
     parser.add_argument('--debug', action='store_true',
                         help='Print file offsets and shapes for every parameter written')
     args = parser.parse_args()
 
-    global DEBUG
+    global DEBUG, KV_QUANT_BITS
     if args.debug:
         DEBUG = True
+    if (args.kv_quant_bits < 0) or (args.kv_quant_bits > 16):
+        parser.error("--kv_quant_bits must be between 0 and 16")
+    KV_QUANT_BITS = args.kv_quant_bits
 
     model_dir = Path(args.model_dir)
 
@@ -650,7 +719,13 @@ def main():
             sys.exit(1)
 
     print(f"Architecture: {arch}")
+    if arch == 'bert':
+        write_bert_model(None, tensors, None)  # raises: not supported
     config = normalise_config(raw_config, arch, args.mask_val)
+    if (arch == 'gpt2') and (config['activation_function'] != 'gelu_new'):
+        print(f"WARNING: activation_function is "
+              f"'{config['activation_function']}', but Weed's GeLU module is "
+              "the tanh approximation ('gelu_new'): outputs will differ.")
     print(f"Config: {json.dumps(config, indent=2)}")
 
     output_path = Path(args.output)

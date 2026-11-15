@@ -57,7 +57,7 @@ class WeedSystem:
         self.weed_lib.load_module.restype = c_ulonglong
         self.weed_lib.load_module.argtypes = [c_char_p]
 
-        self.weed_lib.save_module.restype = c_ulonglong
+        self.weed_lib.save_module.restype = None
         self.weed_lib.save_module.argtypes = [c_ulonglong, c_char_p]
 
         self.weed_lib.free_module.restype = None

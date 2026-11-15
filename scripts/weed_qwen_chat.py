@@ -81,6 +81,29 @@ def greedy(logits: list[float]) -> int:
 # ---------------------------------------------------------------------------
 # Generation
 # ---------------------------------------------------------------------------
+def last_position_logits(result) -> list[float]:
+    """
+    Logits for the last sequence position of a model output.
+
+    result.data is flat and column-major; result.shape gives the layout:
+    [1, seq_len, vocab_size], [seq_len, vocab_size] or [vocab_size].
+    """
+    shape = list(result.shape)
+    data = result.data
+
+    if len(shape) == 3:
+        # logit[0, t, v] = data[t + v * seq_len]
+        _, seq_len, vocab_size = shape
+    elif len(shape) == 2:
+        seq_len, vocab_size = shape
+    elif len(shape) == 1:
+        return list(data[:shape[0]])
+    else:
+        raise RuntimeError(f"Unexpected output shape: {shape}")
+
+    return [data[(seq_len - 1) + v * seq_len] for v in range(vocab_size)]
+
+
 def generate(model: WeedModule,
              input_ids: list[int],
              max_new_tokens: int = 100,
@@ -99,48 +122,37 @@ def generate(model: WeedModule,
 
     tokens = list(input_ids)
 
-    for _ in range(max_new_tokens):
-        t = WeedTensor(
-            data=tokens,
-            shape=[len(tokens)],
-            stride=[1],
-            dtype=DType.INT,
-            offset=0
-        )
-
-        result = model.forward(t)
-
-        shape = list(result.shape)
-        data  = list(result.data)
-
-        if len(shape) == 3:
-            # [1, seq_len, vocab_size] column-major
-            _, seq_len, vocab_size = shape
-            last_logits = [data[(seq_len - 1) * 1 + v * seq_len]
-                           for v in range(vocab_size)]
-        elif len(shape) == 2:
-            seq_len, vocab_size = shape
-            last_logits = [data[(seq_len - 1) + v * seq_len]
-                           for v in range(vocab_size)]
-        elif len(shape) == 1:
-            last_logits = data
-        else:
-            raise RuntimeError(f"Unexpected output shape: {shape}")
-
-        if greedy_decode or temperature == 0.0:
-            next_token = greedy(last_logits)
-        else:
-            next_token = top_p_sample(last_logits, top_p=top_p,
-                                      temperature=temperature)
-
-        tokens.append(next_token)
-
-        if next_token in eos_token_ids:
-            break
-
+    # Start from an empty KV cache, with room for the prompt and everything
+    # that will be generated.
     model.reset_kv_cache()
+    model.set_max_kv_seq_len(len(input_ids) + max_new_tokens)
 
-    return tokens[len(input_ids):]
+    try:
+        # First pass: the whole prompt. After that, the KV cache holds every
+        # earlier token, so each pass is given only the one new token. (Passing
+        # earlier tokens again would append them to the cache a second time.)
+        next_input = list(input_ids)
+        for _ in range(max_new_tokens):
+            t = WeedTensor(data=next_input, shape=[len(next_input)],
+                           stride=[1], dtype=DType.INT, offset=0)
+            logits = last_position_logits(model.forward(t))
+
+            if greedy_decode or temperature == 0.0:
+                next_token = greedy(logits)
+            else:
+                next_token = top_p_sample(logits, top_p=top_p,
+                                          temperature=temperature)
+
+            tokens.append(next_token)
+
+            if next_token in eos_token_ids:
+                break
+
+            next_input = [next_token]
+    finally:
+        model.reset_kv_cache()  # always reset, even on exception
+
+    return tokens[len(input_ids):]  # return only newly generated tokens
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +204,7 @@ def main():
                         help='Path to .weed model file')
     parser.add_argument('--tokenizer', required=True,
                         help='HuggingFace model dir containing tokenizer.json')
-    parser.add_argument('--prompt', default='Hello',
+    parser.add_argument('--prompt', default=None,
                         help='Input prompt (default: "Hello")')
     parser.add_argument('--max_new_tokens', type=int, default=64)
     parser.add_argument('--temperature', type=float, default=0.7)
@@ -224,10 +236,11 @@ def main():
                 f"<|im_start|>user\n{text}<|im_end|>\n"
                 f"<|im_start|>assistant\n")
 
-    prompt = format_prompt(args.prompt, args.chat)
+    interactive = args.prompt is None
+    prompt = format_prompt('Hello' if interactive else args.prompt, args.chat)
     encoding = tokenizer.encode(prompt)
     input_ids = encoding.ids
-    print(f"Prompt ({len(input_ids)} tokens): {args.prompt!r}")
+    print(f"Prompt ({len(input_ids)} tokens): {prompt!r}")
     print()
 
     new_tokens = generate(
@@ -248,8 +261,8 @@ def main():
     print("=" * 60)
     print(f"\n({len(new_tokens)} new tokens generated)")
 
-    # Interactive mode
-    if len(sys.argv) == 3:
+    # Interactive mode if no prompt was specified on CLI
+    if interactive:
         print("\nEntering interactive mode. Ctrl+C to exit.\n")
         while True:
             try:
