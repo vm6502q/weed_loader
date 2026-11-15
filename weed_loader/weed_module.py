@@ -25,13 +25,18 @@ class WeedModule:
             raise RuntimeError("Weed C++ library raised exception.")
 
     def __init__(self, file_path):
+        # No module is held until the load succeeds. (If the load fails, the
+        # ID that the library returns is not ours to free.)
+        self.mid = None
         byte_string = file_path.encode('utf-8')
         c_string_ptr = ctypes.c_char_p(byte_string)
-        self.mid = Weed.weed_lib.load_module(c_string_ptr)
-        self._throw_if_error()
+        mid = Weed.weed_lib.load_module(c_string_ptr)
+        if Weed.weed_lib.get_error(mid) != 0:
+            raise RuntimeError("Weed C++ library raised exception.")
+        self.mid = mid
 
     def __del__(self):
-        mid = self.mid
+        mid = getattr(self, "mid", None)
         self.mid = None
         if mid is not None:
             Weed.weed_lib.free_module(mid)
@@ -70,7 +75,7 @@ class WeedModule:
     def save(self, file_path):
         byte_string = file_path.encode('utf-8')
         c_string_ptr = ctypes.c_char_p(byte_string)
-        self.mid = Weed.weed_lib.save_module(self.mid, c_string_ptr)
+        Weed.weed_lib.save_module(self.mid, c_string_ptr)
         self._throw_if_error()
 
     def forward(self, t):

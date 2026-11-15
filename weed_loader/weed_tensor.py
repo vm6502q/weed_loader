@@ -27,7 +27,7 @@ class WeedTensor:
         if stride is None:
             st = 1
             stride = []
-            for i in range(len(stride)):
+            for i in range(len(shape)):
               stride.append(st)
               st *= shape[i]
         else:
