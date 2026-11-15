@@ -120,7 +120,7 @@ jobs:
           python -m pip install wheel setuptools
 
       - name: Install Homebrew (MacOS)
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
 
       - name: Prepare Build Environment (MacOS)
         run: |
@@ -133,55 +133,7 @@ jobs:
           python -m venv venv
           source venv/bin/activate
           pip3 install --upgrade wheel setuptools
-          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout a6a44f9ffdea84383f34cbd7883aa7f18fe8a125
-          mkdir -p build; cd build
-          cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
-          make qrack_pinvoke
-          sudo make install
-          cd ../..
-          pip3 install .
-          python setup.py bdist_wheel --plat-name=${{ matrix.platform }}
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: weed_loader-${{ matrix.platform }}
-          path: dist/
-
-  build_mac_14:
-    runs-on: macos-14  # Use a Mac OS runner
-    strategy:
-      matrix:
-        platform:
-          - macosx_14_0_arm64
-    steps:
-      - name: Checkout Weed Loader
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Python Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install wheel setuptools
-
-      - name: Install Homebrew (MacOS)
-        uses: Homebrew/actions/setup-homebrew@master
-
-      - name: Prepare Build Environment (MacOS)
-        run: |
-          brew install cmake virtualenv
-
-      - name: Build Wheel
-        run: |
-          mkdir venv
-          python -m venv venv
-          source venv/bin/activate
-          pip3 install --upgrade wheel setuptools
-          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout a6a44f9ffdea84383f34cbd7883aa7f18fe8a125
+          git clone https://github.com/unitaryfund/qrack.git; cd qrack; git checkout d199dbf88cfbe68623e8731e2771e209f8064f5d
           mkdir -p build; cd build
           cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCPP_STD=20 -DENABLE_OPENCL=OFF -DENABLE_RDRAND=OFF -DENABLE_COMPLEX_X2=OFF -DENABLE_SSE3=OFF -DQBCAPPOW=8 ..
           make qrack_pinvoke
